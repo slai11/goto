@@ -1,0 +1,12 @@
+[package]
+name = "goto"
+version = "0.1.0"
+authors = ["Sylvester Chin <sylvester.csw@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+clap ="2.31.2"
+csv = "1.1"
