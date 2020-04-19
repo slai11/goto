@@ -18,11 +18,15 @@ fn run() -> Result<()> {
         return indexer::update(n);
     }
 
-    if let Some(matches) = matches.subcommand_matches("prune") {
+    if let Some(_) = matches.subcommand_matches("ls") {
+        return db::list();
+    }
+
+    if let Some(_) = matches.subcommand_matches("prune") {
         return indexer::prune();
     }
 
-    if let Some(matches) = matches.subcommand_matches("init") {
+    if let Some(_) = matches.subcommand_matches("init") {
         init::init();
         return Ok(());
     }
