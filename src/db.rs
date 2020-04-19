@@ -48,3 +48,13 @@ fn init_db(path: String) -> Result<()> {
     File::create(path)?;
     Ok(())
 }
+
+pub fn list() -> Result<()> {
+    let db = read_db()?;
+    let mut v = db.iter().collect::<Vec<_>>();
+
+    println!("======= Current Indexed Directories =======");
+    v.sort_by(|a, b| a.1.cmp(&b.1));
+    v.iter().for_each(|(k, v)| println!("{} ->> {}", k, v));
+    Ok(())
+}
