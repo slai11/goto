@@ -49,9 +49,38 @@ SUBCOMMANDS:
 ## Tutorial
 
 #### Indexing a directory
+```
+❯ gt add --help
+goto-add
+Add directories and sub-directories to index
+
+USAGE:
+    goto add [FLAGS] [OPTIONS]
+
+FLAGS:
+    -a               Adds all subdirectory.
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -r <recursive>        Recursively indexs
 
 ```
+
+To add the current working directory into your indexs:
+```
 gt add
+```
+
+To add the current directory with its subdirectories (`-a` for all subdirectories):
+
+```
+gt add -a
+```
+
+To add multiple levels of subdirectory, use the following command, where `n` is
+the levels of subdirectories to add.
+```
 gt add -r n
 ```
 
