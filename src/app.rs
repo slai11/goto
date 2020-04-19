@@ -12,6 +12,11 @@ pub fn build_app() -> App<'static, 'static> {
             SubCommand::with_name("add")
                 .about("Add directories and sub-directories to index")
                 .arg(
+                    Arg::with_name("all")
+                        .short("a")
+                        .help("Adds all subdirectory."),
+                )
+                .arg(
                     Arg::with_name("recursive")
                         .short("r")
                         .takes_value(true)

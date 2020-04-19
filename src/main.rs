@@ -12,8 +12,15 @@ fn run() -> Result<()> {
     if let Some(matches) = matches.subcommand_matches("add") {
         let n: i8 = match matches.value_of("recursive") {
             Some(level) => level.parse().unwrap(),
-            None => 0,
+            None => {
+                if matches.is_present("all") {
+                    1
+                } else {
+                    0
+                }
+            }
         };
+
         // perform add logic here
         return indexer::update(n);
     }
@@ -44,7 +51,7 @@ fn main() {
             process::exit(0);
         }
         Err(err) => {
-            eprintln!("[fd error]: {}", err);
+            println!("[gt error]: {}", err);
             process::exit(1);
         }
     }
