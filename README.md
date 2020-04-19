@@ -23,28 +23,55 @@ working directory of your shell programmatically.
 ## Command-Line Options
 
 ```
+❯ gt help
+gt
+
+USAGE:
+    goto [name]... [SUBCOMMAND]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    <name>...    Refers to name of index. Must be specific for now
+
+SUBCOMMANDS:
+    add      Add directories and sub-directories to index
+    help     Prints this message or the help of the given subcommand(s)
+    init     Initialises bash-script and database.
+    ls       List all indexed directories.
+    prune    Removes invalid indexes in the database.
 
 ```
 
 
 ## Tutorial
 
-Indexing a directory
+#### Indexing a directory
+
 ```
 gt add
 gt add -r n
 ```
 
-Jumping to an indexed directory
-`gt PATH` to jump to your path
+#### List indexed directories
+If you wish to list and inspect your current indexed directories. 
+```
+gt ls
+```
 
-Cleaning up index to ensure all paths are valid
-`gt prune` to update and remove non-existent directories
+#### Jumping to an indexed directory
+Use `gt <PATH>` to jump to your desired folder. The `<PATH>` is the folder name.
+For example to jump to `Users/xxx/project/personal`, the command `gt personal`
+will change your shell directory to the desired path.
+
+#### Cleaning up index to ensure all paths are valid
+Use `gt prune` to update and remove non-existent directories.
 
 
-## todo
-1. resolve repeated names in the hmap
-2. recursive listing
-3. list indexes
-4. set up travis & github actions
-
+## TODO
+1. Resolve repeated names in the hmap
+2. Add demo svg
+3. Set up travis & github actions
+4. Publish onto brew/apt/apk.
