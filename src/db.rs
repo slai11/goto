@@ -10,9 +10,7 @@ use csv::Writer;
 // reads k,v pairs from db, returning a hmap
 pub fn read_db() -> Result<HashMap<String, String>> {
     let mut index_map = HashMap::new();
-    let db_path = env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt"));
-
-    match db_path {
+    match env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt")) {
         Some(path) => {
             if !Path::new(&path).exists() {
                 init_db(path.to_string());
@@ -35,13 +33,17 @@ pub fn read_db() -> Result<HashMap<String, String>> {
 }
 
 pub fn write_db(hm: HashMap<String, String>) -> Result<()> {
-    let db_path = "/Users/sylvesterchin/.config/goto/db.txt";
-    let mut wtr = Writer::from_path(db_path)?;
-    for (k, v) in &hm {
-        wtr.write_record(&[k, v])?;
+    match env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt")) {
+        Some(path) => {
+            let mut wtr = Writer::from_path(path)?;
+            for (k, v) in &hm {
+                wtr.write_record(&[k, v])?;
+            }
+            wtr.flush()?;
+            Ok(())
+        }
+        None => Err(anyhow!("gt's index database does not exist!")),
     }
-    wtr.flush()?;
-    Ok(())
 }
 
 fn init_db(path: String) -> Result<()> {
