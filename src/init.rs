@@ -17,7 +17,7 @@ _gt() {{
     fi
 }}
 gt() {{
-    result="$(goto "$@")" || return "$?"
+    result="$(goto-rs "$@")" || return "$?"
     if [ -d "$result" ]; then
             _gt "$result" || return "$?"
         elif [ -n "$result" ]; then
