@@ -13,12 +13,14 @@ keystrokes.
 
 ## Installation 
 
-Paste `eval "$(goto init)"` in your bashrc or zshrc.
+Paste `eval "$(goto-rs init)"` in your bashrc or zshrc.
 
-The binary's name is `goto` while the command you should be using is `gt`.
+The binary's name is `goto-rs` while the command you should be using is `gt`.
+
 A shell-based workaround inspired by https://github.com/ajeetdsouza/zoxide and
 https://github.com/gsamokovarov/jump is used as it is not possible to change the
-working directory of your shell programmatically.
+working directory of your shell programmatically. The awkward naming of the
+binary is due to lack of namespace.
 
 ## Command-Line Options
 
@@ -102,5 +104,4 @@ Use `gt prune` to update and remove non-existent directories.
 ## TODO
 1. Resolve repeated names in the hmap
 2. Add demo svg
-3. Set up travis & github actions
-4. Publish onto brew/apt/apk.
+3. Publish onto brew/apt/apk.
