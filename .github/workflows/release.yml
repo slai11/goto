@@ -12,10 +12,12 @@
 
 name: release
 on:
-  release:   # For testing, do a release on v0.0.0 (then delete it)
-    types:
-    - created
-
+  push:
+    # Enable when testing release infrastructure on a branch.
+    # branches:
+    # - ag/release
+    tags:
+    - 'v[0-9]+.[0-9]+.[0-9]+'
 jobs:
   set-release-vars:
     name: set-release-vars
