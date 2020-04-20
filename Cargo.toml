@@ -1,13 +1,13 @@
 [package]
 name = "goto-rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Sylvester Chin <sylvester.csw@gmail.com>"]
 edition = "2018"
 description = "*gt* is a simple and user-friendly way to jump to your indexed directories."
 license = "MIT"
 readme = "README.md"
 categories = ["command-line-utilities"]
-
+repository = "https://github.com/slai11/goto"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
