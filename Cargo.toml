@@ -1,5 +1,5 @@
 [package]
-name = "goto"
+name = "goto-rs"
 version = "0.1.0"
 authors = ["Sylvester Chin <sylvester.csw@gmail.com>"]
 edition = "2018"
