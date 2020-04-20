@@ -6,3 +6,4 @@ fix: 'fix--*'
 perf: ['performance--*', 'perf--*']
 refactor: 'refactor--*'
 test: 'test--*'
+doc: ['doc--*', 'docs--*']
