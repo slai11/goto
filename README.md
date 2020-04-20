@@ -1,8 +1,8 @@
 # goto
 
-gt is a simple and user-friendly way to jump to your indexed directories.
+*gt* is a simple and user-friendly way to jump to your indexed directories.
 
-gt is short for "goto", which is basically what you want to do with minimal
+*gt* is short for "goto", which is basically what you want to do with minimal
 keystrokes.
 
 ## Features
@@ -13,7 +13,7 @@ keystrokes.
 
 ## Installation 
 
-Paste `eval $(goto init)` in your bashrc or zshrc.
+Paste `eval "$(goto init)"` in your bashrc or zshrc.
 
 The binary's name is `goto` while the command you should be using is `gt`.
 A shell-based workaround inspired by https://github.com/ajeetdsouza/zoxide and
