@@ -88,7 +88,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "goto"
+name = "goto-rs"
 version = "0.1.0"
 dependencies = [
  "anyhow",
