@@ -1,5 +1,10 @@
 # goto (gt)
 
+[![CI Status](https://img.shields.io/github/workflow/status/slai11/goto/ci/master?label=ci&logo=github&style=for-the-badge)](https://github.com/slai11/goto/actions)
+[![Crates.io](https://img.shields.io/crates/v/goto?style=for-the-badge)](https://crates.io/crates/goto-rs)
+[![License: MIT](https://img.shields.io/github/license/slai11/goto?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+
 *gt* is a simple and user-friendly way to jump to your indexed directories.
 
 *gt* is short for "goto", which is basically what you want to do with minimal
