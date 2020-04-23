@@ -25,6 +25,22 @@ fn run() -> Result<()> {
         return indexer::update(n);
     }
 
+    if let Some(matches) = matches.subcommand_matches("remove") {
+        let n: i8 = match matches.value_of("recursive") {
+            Some(level) => level.parse().unwrap(),
+            None => {
+                if matches.is_present("all") {
+                    1
+                } else {
+                    0
+                }
+            }
+        };
+
+        // perform add logic here
+        return indexer::remove(n);
+    }
+
     if let Some(_) = matches.subcommand_matches("ls") {
         return db::list();
     }

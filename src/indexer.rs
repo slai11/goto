@@ -39,6 +39,41 @@ pub fn update(level: i8) -> Result<()> {
     Ok(())
 }
 
+pub fn remove(level: i8) -> Result<()> {
+    let mut db = db::read_db()?;
+    let path = env::current_dir()?;
+    let mut cur = Vec::new();
+    let mut next = Vec::new();
+    cur.push(path);
+
+    let mut to_be_deleted: HashMap<String, bool> = HashMap::new();
+    for _ in 0..=level {
+        while !cur.is_empty() {
+            let p = cur.pop().unwrap();
+            // push sub-directories into next
+            {
+                to_be_deleted.insert(p.display().to_string(), true);
+            }
+            if p.is_dir() {
+                for entry in fs::read_dir(p)? {
+                    let entry = entry?;
+                    let path = entry.path();
+                    if path.is_dir() {
+                        next.push(path);
+                    }
+                }
+            }
+        }
+        cur = next;
+        next = Vec::new();
+    }
+
+    db.retain(|_, v| !to_be_deleted.contains_key(&v.to_string()));
+
+    db::write_db(db)?;
+    Ok(())
+}
+
 pub fn prune() -> Result<()> {
     let pruned: HashMap<String, String> = db::read_db()?
         .into_iter()

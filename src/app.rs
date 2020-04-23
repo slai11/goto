@@ -10,7 +10,7 @@ pub fn build_app() -> App<'static, 'static> {
         )
         .subcommand(
             SubCommand::with_name("add")
-                .about("Add directories and sub-directories to index")
+                .about("Add directories and sub-directories to index.")
                 .arg(
                     Arg::with_name("all")
                         .short("a")
@@ -20,14 +20,29 @@ pub fn build_app() -> App<'static, 'static> {
                     Arg::with_name("recursive")
                         .short("r")
                         .takes_value(true)
-                        .help("Recursively indexs"),
+                        .help("Recursively indexs."),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("rm")
+                .about("Remove directories and sub-directories to index.")
+                .arg(
+                    Arg::with_name("all")
+                        .short("a")
+                        .help("Removes all subdirectory."),
+                )
+                .arg(
+                    Arg::with_name("recursive")
+                        .short("r")
+                        .takes_value(true)
+                        .help("Recursively removes."),
                 ),
         )
         .arg(
             Arg::with_name("name")
                 .multiple(true)
                 .empty_values(true)
-                .help("Refers to name of index. Must be specific for now"),
+                .help("Refers to name of index. Must be specific for now."),
         );
     app
 }
