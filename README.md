@@ -1,4 +1,4 @@
-# goto
+# goto (gt)
 
 *gt* is a simple and user-friendly way to jump to your indexed directories.
 
@@ -9,7 +9,6 @@ keystrokes.
 
 * Convenient syntax `gt XXX` to jump to XXX's path
 * Easy indexing of all directories by using 
-
 
 ## Installation 
 
@@ -29,26 +28,27 @@ binary is due to lack of namespace.
 gt
 
 USAGE:
-    goto [name]... [SUBCOMMAND]
+    goto-rs [name]... [SUBCOMMAND]
 
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
 
 ARGS:
-    <name>...    Refers to name of index. Must be specific for now
+    <name>...    Refers to name of index. Must be specific for now.
 
 SUBCOMMANDS:
-    add      Add directories and sub-directories to index
+    add      Add directories and sub-directories to index.
     help     Prints this message or the help of the given subcommand(s)
     init     Initialises bash-script and database.
     ls       List all indexed directories.
     prune    Removes invalid indexes in the database.
+    rm       Remove directories and sub-directories to index.
 
 ```
 
 
-## Tutorial
+## Guide 
 
 #### Indexing a directory
 ```
@@ -101,7 +101,26 @@ will change your shell directory to the desired path.
 Use `gt prune` to update and remove non-existent directories.
 
 
+#### Removing indexes
+Removing indexes works the same way as `gt add` but in the reverse manner.
+
+To remove the directory you are in from the indexes:
+```
+gt rm
+```
+
+To remove the current directory with its subdirectories:
+```
+gt rm -a
+```
+
+To add multiple levels of subdirectory, use the following command, where `n` is
+the levels of subdirectories to add.
+```
+gt add -r n
+```
+
 ## TODO
-1. Resolve repeated names in the hmap
-2. Add demo svg
+1. Add demo svg
+2. GUIDE.md
 3. Publish onto brew/apt/apk.
