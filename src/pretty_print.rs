@@ -84,7 +84,7 @@ impl Node {
             stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
 
             // print prefix depending on node's relative position
-            let sym = if has_next { "├" } else { "└" };
+            let sym = if has_next { "├─" } else { "└─" };
             let pline = format!("{}{}", prefix, sym);
             write!(&mut stdout, "{}", pline)?;
 
