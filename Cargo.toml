@@ -1,6 +1,6 @@
 [package]
 name = "goto-rs"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Sylvester Chin <sylvester.csw@gmail.com>"]
 edition = "2018"
 description = "*gt* is a simple and user-friendly way to jump to your indexed directories."
@@ -16,3 +16,5 @@ anyhow = "1.0"
 clap ="2.31.2"
 csv = "1.1"
 itertools = "0.9"
+termcolor = "1.1"
+
