@@ -7,6 +7,8 @@ use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
 use csv::Writer;
 
+use crate::pretty_print;
+
 // reads k,v pairs from db, returning a hmap
 pub fn read_db() -> Result<HashMap<String, String>> {
     let mut index_map = HashMap::new();
@@ -55,8 +57,7 @@ pub fn list() -> Result<()> {
     let db = read_db()?;
     let mut v = db.iter().collect::<Vec<_>>();
 
-    println!("======= Current Indexed Directories =======");
+    println!("======= Current Indexed Directories (alias highlighted) =======");
     v.sort_by(|a, b| a.1.cmp(&b.1));
-    v.iter().for_each(|(k, v)| println!("{} ->> {}", k, v));
-    Ok(())
+    pretty_print::pretty_print(&v)
 }

@@ -3,6 +3,7 @@
 ## `v0.2.0`
 - Fix bug of clashing aliases.
 - A `rm` feature to delete alises.
+- Lists index in tree format
 
 ## `v0.1.0`
 

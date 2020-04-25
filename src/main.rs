@@ -5,6 +5,7 @@ mod app;
 mod db;
 mod indexer;
 mod init;
+mod pretty_print;
 mod switch;
 
 fn run() -> Result<()> {
