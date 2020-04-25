@@ -97,7 +97,7 @@ fn insert(db: &mut HashMap<String, String>, p: &PathBuf) {
         Some(v_existing) => {
             if *v_existing != p.display().to_string() {
                 let (existing, clashing) =
-                    get_shortest_distinct_paths(&mut v.clone(), &mut String::from(v_existing));
+                    get_shortest_distinct_paths(&mut String::from(v_existing), &mut v.clone());
                 db.insert(existing, v_existing.to_string());
                 db.insert(clashing, v);
                 db.remove(&k);
