@@ -13,10 +13,24 @@ keystrokes.
 ## Features
 
 * Convenient syntax `gt XXX` to jump to XXX's path
-* Easy indexing of all directories by using 
+* Easy indexing of sub-directories by using `gt add -a`
+* Pretty tree-like index listing using `gt ls`
+
+## Demo
+
+![Demo](doc/demo.png)
+
 
 ## Installation 
 
+Step 1. Getting the binary
+```
+wget https://github.com/slai11/goto/releases/download/v0.2.1/goto-rs-v0.2.0-x86_64-apple-darwin.tar.gz
+tar -xvf goto-rs-v0.2.1-x86_64-apple-darwin.tar.gz 
+cp goto-rs-v0.2.1-x86_64-apple-darwin/goto-rs /usr/local/bin
+```
+
+Step 2. Setting up your bash/zsh
 Paste `eval "$(goto-rs init)"` in your bashrc or zshrc.
 
 The binary's name is `goto-rs` while the command you should be using is `gt`.
@@ -25,6 +39,8 @@ A shell-based workaround inspired by https://github.com/ajeetdsouza/zoxide and
 https://github.com/gsamokovarov/jump is used as it is not possible to change the
 working directory of your shell programmatically. The awkward naming of the
 binary is due to lack of namespace.
+
+Coming Soon: Brew install!
 
 ## Command-Line Options
 
@@ -55,25 +71,12 @@ SUBCOMMANDS:
 
 ## Guide 
 
+#### Jumping to an indexed directory
+Use `gt <PATH>` to jump to your desired folder. The `<PATH>` is the folder name.
+For example to jump to `Users/xxx/project/personal`, the command `gt personal`
+will change your shell directory to the desired path.
+
 #### Indexing a directory
-```
-❯ gt add --help
-goto-add
-Add directories and sub-directories to index
-
-USAGE:
-    goto add [FLAGS] [OPTIONS]
-
-FLAGS:
-    -a               Adds all subdirectory.
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
-OPTIONS:
-    -r <recursive>        Recursively indexs
-
-```
-
 To add the current working directory into your indexs:
 ```
 gt add
@@ -97,11 +100,6 @@ If you wish to list and inspect your current indexed directories.
 gt ls
 ```
 
-#### Jumping to an indexed directory
-Use `gt <PATH>` to jump to your desired folder. The `<PATH>` is the folder name.
-For example to jump to `Users/xxx/project/personal`, the command `gt personal`
-will change your shell directory to the desired path.
-
 #### Cleaning up index to ensure all paths are valid
 Use `gt prune` to update and remove non-existent directories.
 
@@ -122,10 +120,6 @@ gt rm -a
 To add multiple levels of subdirectory, use the following command, where `n` is
 the levels of subdirectories to add.
 ```
-gt add -r n
+gt rm -r n
 ```
 
-## TODO
-1. Add demo svg
-2. GUIDE.md
-3. Publish onto brew/apt/apk.
