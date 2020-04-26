@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## `v0.2.1`
+- Add space to tree print
+- Add demo screenshot to docs
+
 ## `v0.2.0`
 - Fix bug of clashing aliases.
 - A `rm` feature to delete alises.
