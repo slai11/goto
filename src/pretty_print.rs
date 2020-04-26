@@ -85,7 +85,7 @@ impl Node {
 
             // print prefix depending on node's relative position
             let sym = if has_next { "├─" } else { "└─" };
-            let pline = format!("{}{}", prefix, sym);
+            let pline = format!("{}{} ", prefix, sym);
             write!(&mut stdout, "{}", pline)?;
 
             // print in color only if folder is indexed
