@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## `v0.2.2`
+- Fix db initialisation process
+
 ## `v0.2.1`
 - Add space to tree print
 - Add demo screenshot to docs
