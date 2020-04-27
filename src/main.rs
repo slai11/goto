@@ -26,7 +26,7 @@ fn run() -> Result<()> {
         return indexer::update(n);
     }
 
-    if let Some(matches) = matches.subcommand_matches("remove") {
+    if let Some(matches) = matches.subcommand_matches("rm") {
         let n: i8 = match matches.value_of("recursive") {
             Some(level) => level.parse().unwrap(),
             None => {
@@ -57,7 +57,7 @@ fn run() -> Result<()> {
 
     match matches.occurrences_of("name") {
         1 => switch::switch_to(matches.value_of("name").unwrap()),
-        _ => Err(anyhow!("No home directory available!")),
+        _ => Err(anyhow!("Incorrect number of arguments.")),
     }
 }
 
