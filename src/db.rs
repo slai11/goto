@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::env;
+use std::fs;
 use std::fs::File;
 use std::path::Path;
 
@@ -12,12 +13,14 @@ use crate::pretty_print;
 // reads k,v pairs from db, returning a hmap
 pub fn read_db() -> Result<HashMap<String, String>> {
     let mut index_map = HashMap::new();
-    match env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt")) {
+    let filename = "db.txt";
+    match env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto")) {
         Some(path) => {
-            if !Path::new(&path).exists() {
-                init_db(path.to_string());
+            let filepath = format!("{}/{}", path, filename);
+            if !Path::new(&filepath).exists() {
+                init_db(path.to_string(), filename.to_string());
             }
-            let file = File::open(path)?;
+            let file = File::open(filepath)?;
             let mut rdr = ReaderBuilder::new().has_headers(false).from_reader(file);
 
             for result in rdr.records() {
@@ -48,8 +51,10 @@ pub fn write_db(hm: HashMap<String, String>) -> Result<()> {
     }
 }
 
-fn init_db(path: String) -> Result<()> {
-    File::create(path)?;
+fn init_db(path: String, filename: String) -> Result<()> {
+    fs::create_dir_all(&path)?;
+    let filepath = format!("{}/{}", path, filename);
+    File::create(filepath)?;
     Ok(())
 }
 
