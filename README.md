@@ -25,9 +25,9 @@ keystrokes.
 
 Step 1. Getting the binary
 ```
-wget https://github.com/slai11/goto/releases/download/v0.2.1/goto-rs-v0.2.1-x86_64-apple-darwin.tar.gz
-tar -xvf goto-rs-v0.2.1-x86_64-apple-darwin.tar.gz 
-cp goto-rs-v0.2.1-x86_64-apple-darwin/goto-rs /usr/local/bin
+wget https://github.com/slai11/goto/releases/download/v0.2.2/goto-rs-v0.2.2-x86_64-apple-darwin.tar.gz
+tar -xvf goto-rs-v0.2.2-x86_64-apple-darwin.tar.gz 
+cp goto-rs-v0.2.2-x86_64-apple-darwin/goto-rs /usr/local/bin
 ```
 
 Step 2. Setting up your bash/zsh
