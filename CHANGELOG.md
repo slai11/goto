@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## `v0.2.3`
+- Fix `rm` bug in cli
+
 ## `v0.2.2`
 - Fix db initialisation process
 
@@ -13,5 +16,4 @@
 - Lists index in tree format
 
 ## `v0.1.0`
-
 - Initial implementation with simple fuzzy jump-to.
