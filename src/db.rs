@@ -18,7 +18,7 @@ pub fn read_db() -> Result<HashMap<String, String>> {
         Some(path) => {
             let filepath = format!("{}/{}", path, filename);
             if !Path::new(&filepath).exists() {
-                init_db(path.to_string(), filename.to_string());
+                init_db(path.to_string(), filename.to_string())?;
             }
             let file = File::open(filepath)?;
             let mut rdr = ReaderBuilder::new().has_headers(false).from_reader(file);

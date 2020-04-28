@@ -110,7 +110,7 @@ impl Node {
         let new_prefix = if has_next {
             prefix + "│" + indent
         } else {
-            prefix + indent
+            prefix + " " + indent
         };
 
         // recursively print out child nodes
