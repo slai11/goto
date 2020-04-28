@@ -18,9 +18,10 @@ pub fn switch_to(k: &str) -> Result<()> {
         }
 
         None => match fuzzy_lookup(db, k) {
-            None => Err(anyhow!(
-                "No such alias: {}, try using the `ls` command to list the aliases."
-            )),
+            None => Err(anyhow!(format!(
+                "No such alias: {}, try using the `ls` command to list the aliases.",
+                k
+            ))),
             Some(fk) => {
                 writeln!(handle, "{}", &fk).unwrap();
                 Ok(())
@@ -36,7 +37,7 @@ fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
         .filter(|(k, _)| in_alias(&k, w))
         .collect::<Vec<_>>();
 
-    // NOTE: take shortest item (closest match)
+    // NOTE: take shortest alias (assumes to be closest match)
     v.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
     v.first().map(|(_, v)| v.to_string())
 }

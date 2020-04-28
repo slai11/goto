@@ -40,7 +40,6 @@ pub fn build_app() -> App<'static, 'static> {
         )
         .arg(
             Arg::with_name("name")
-                .multiple(true)
                 .empty_values(true)
                 .help("Refers to name of index. Must be specific for now."),
         );
