@@ -34,47 +34,43 @@ pub fn switch_to(k: &str) -> Result<()> {
 fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
     let mut v = db
         .iter()
-        .filter(|(k, _)| in_alias(&k, w))
+        .map(|(k, v)| (v, position_vec(&k, w)))
+        .filter(|(_, v)| v.len() == w.len())
+        .map(|(k, mut v)| {
+            v = v.windows(2).map(|x| x[1] - x[0]).collect::<Vec<_>>();
+            v.sort();
+            (k, v.iter().fold(0, |acc, x| acc * 10 + x))
+        })
         .collect::<Vec<_>>();
 
     // NOTE: take shortest alias (assumes to be closest match)
-    v.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
-    v.first().map(|(_, v)| v.to_string())
+    v.sort_by(|a, b| a.1.cmp(&b.1));
+    v.first().map(|(k, _)| k.to_string())
 }
 
-// checks if user-entered path is a subsequence of alias
-// Time-Complexity O(m+n)
-fn in_alias(alias: &str, path: &str) -> bool {
+fn position_vec(alias: &str, path: &str) -> Vec<i32> {
     let mut alias_ptr = alias.chars();
+    let mut vec = Vec::<i32>::new();
+    let mut idx = 0;
 
     for c in path.chars() {
         // advance 1 char in alias until a match occurs
         while let opt_char = alias_ptr.nth(0) {
             match opt_char {
-                None => return false,
+                None => return vec,
                 Some(alias_c) => {
                     if alias_c == c {
-                        // advance to next char in word on a match
+                        vec.push(idx);
+                        idx += 1;
                         break;
                     }
                 }
             }
+            idx += 1;
         }
     }
 
-    true
-}
-
-#[test]
-fn alias_test() {
-    assert_eq!(in_alias("alias", "ais"), true);
-    assert_eq!(in_alias("alias", "ila"), false);
-
-    // empty alias
-    assert_eq!(in_alias("", "abc"), false);
-
-    // path longer than alias
-    assert_eq!(in_alias("a", "abc"), false);
+    vec
 }
 
 #[test]
@@ -83,4 +79,16 @@ fn fuzzy_test_takes_shortest() {
     db.insert(String::from("my-very-long-alias"), String::from("1"));
     db.insert(String::from("my-very-xxx-alias"), String::from("2"));
     assert_eq!(fuzzy_lookup(db, "myalias").unwrap(), "2");
+}
+
+#[test]
+fn fuzzy_test_takes_most_relevant() {
+    let mut db = HashMap::new();
+    db.insert(String::from("media_engine"), String::from("1"));
+    db.insert(
+        String::from("manifest_services_so_long_name"),
+        String::from("2"),
+    );
+    db.insert(String::from("man_paginator"), String::from("3"));
+    assert_eq!(fuzzy_lookup(db, "mani").unwrap(), "2");
 }
