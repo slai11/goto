@@ -32,7 +32,7 @@ pub fn switch_to(k: &str) -> Result<()> {
 
 // fuzzy_lookup is not a try fuzzy lookup but merely a simple subsequence search
 fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
-    let mut v = db
+    let vec = db
         .iter()
         .map(|(k, v)| (v, position_vec(&k, w)))
         .filter(|(_, v)| v.len() == w.len())
@@ -43,9 +43,15 @@ fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
         })
         .collect::<Vec<_>>();
 
-    // NOTE: take shortest alias (assumes to be closest match)
-    v.sort_by(|a, b| a.1.cmp(&b.1));
-    v.first().map(|(k, _)| k.to_string())
+    vec.iter()
+        .min_by(|a, b| a.1.cmp(&b.1)) // best distance score
+        .map(|pair| {
+            vec.iter()
+                .filter(|(_, v)| *v == pair.1)
+                .min_by(|a, b| a.0.len().cmp(&b.0.len())) // shortest alias
+                .map(|(k, _)| k.to_string())
+        })
+        .flatten()
 }
 
 fn position_vec(alias: &str, path: &str) -> Vec<i32> {
