@@ -30,7 +30,9 @@ pub fn switch_to(k: &str) -> Result<()> {
     }
 }
 
-// fuzzy_lookup is not a try fuzzy lookup but merely a simple subsequence search
+// fuzzy_lookup filters aliases where the search term is a subsequence.
+// Aliases are ranked according to how closely packed the subsequence is and ties
+// are broken by length of the alias.
 fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
     let vec = db
         .iter()
@@ -54,6 +56,8 @@ fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
         .flatten()
 }
 
+// position_vec returns a vec highlighting positions where search terms
+// shows up in alias.
 fn position_vec(alias: &str, path: &str) -> Vec<i32> {
     let mut alias_ptr = alias.chars();
     let mut vec = Vec::<i32>::new();
