@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## `v0.3.0`
+- Search considers sparsity of search term-alias subsequence.
+
 ## `v0.2.4`
 - Clean up error message.
 - Refine tree printing.

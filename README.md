@@ -25,9 +25,9 @@ keystrokes.
 
 Step 1. Getting the binary
 ```
-wget https://github.com/slai11/goto/releases/download/v0.2.4/goto-rs-v0.2.4-x86_64-apple-darwin.tar.gz
-tar -xvf goto-rs-v0.2.4-x86_64-apple-darwin.tar.gz 
-cp goto-rs-v0.2.4-x86_64-apple-darwin/goto-rs /usr/local/bin
+wget https://github.com/slai11/goto/releases/download/v0.3.0/goto-rs-v0.3.0-x86_64-apple-darwin.tar.gz
+tar -xvf goto-rs-v0.3.0-x86_64-apple-darwin.tar.gz
+cp goto-rs-v0.3.0-x86_64-apple-darwin/goto-rs /usr/local/bin
 ```
 
 Or you could clone the project and build from source. You will need rust (`brew
