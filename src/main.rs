@@ -42,15 +42,15 @@ fn run() -> Result<()> {
         return indexer::remove(n);
     }
 
-    if let Some(_) = matches.subcommand_matches("ls") {
+    if matches.subcommand_matches("ls").is_some() {
         return db::list();
     }
 
-    if let Some(_) = matches.subcommand_matches("prune") {
+    if matches.subcommand_matches("prune").is_some() {
         return indexer::prune();
     }
 
-    if let Some(_) = matches.subcommand_matches("init") {
+    if matches.subcommand_matches("init").is_some() {
         init::init();
         return Ok(());
     }
