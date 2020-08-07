@@ -1,7 +1,7 @@
 use clap::{App, AppSettings, Arg, SubCommand};
 
 pub fn build_app() -> App<'static, 'static> {
-    let app = App::new("gt")
+    App::new("gt")
         .version(env!("CARGO_PKG_VERSION"))
         .setting(AppSettings::ColoredHelp)
         .subcommand(SubCommand::with_name("init").about("Initialises bash-script and database."))
@@ -43,6 +43,5 @@ pub fn build_app() -> App<'static, 'static> {
             Arg::with_name("name")
                 .empty_values(true)
                 .help("Refers to name of index. Must be specific for now."),
-        );
-    app
+        )
 }

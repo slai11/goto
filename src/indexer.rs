@@ -105,12 +105,11 @@ fn insert(db: &mut HashMap<String, String>, p: &PathBuf) {
             None
         }
     };
-    ()
 }
 
 fn get_shortest_distinct_paths(a: &mut String, b: &mut String) -> (String, String) {
-    let asplit = a.split("/").collect::<Vec<&str>>();
-    let bsplit = b.split("/").collect::<Vec<&str>>();
+    let asplit = a.split('/').collect::<Vec<&str>>();
+    let bsplit = b.split('/').collect::<Vec<&str>>();
     let mut avec = Vec::new();
     let mut bvec = Vec::new();
 
