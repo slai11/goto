@@ -12,7 +12,7 @@ use crate::pretty_print;
 
 pub struct GotoFile {
     pub path: String,
-    pub count: i32,
+    pub count: u32,
 }
 
 // reads k,v pairs from db, returning a hmap
@@ -32,8 +32,8 @@ pub fn read_db() -> Result<HashMap<String, GotoFile>> {
                 let record = result?;
                 let alias = &record[0];
                 let fp = &record[1];
-                let freq_count: i32 = if record.len() > 2 {
-                    record[2].parse::<i32>().unwrap_or(0)
+                let freq_count: u32 = if record.len() > 2 {
+                    record[2].parse::<u32>().unwrap_or(0)
                 } else {
                     0
                 };
