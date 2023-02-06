@@ -68,16 +68,16 @@ pub fn remove(level: i8) -> Result<()> {
         next = Vec::new();
     }
 
-    db.retain(|_, v| !to_be_deleted.contains_key(&v.to_string()));
+    db.retain(|_, v| !to_be_deleted.contains_key(&v.path.to_string()));
 
     db::write_db(db)?;
     Ok(())
 }
 
 pub fn prune() -> Result<()> {
-    let pruned: HashMap<String, String> = db::read_db()?
+    let pruned: HashMap<String, db::GotoFile> = db::read_db()?
         .into_iter()
-        .filter(|(_, v)| Path::new(&v).exists())
+        .filter(|(_, v)| Path::new(&v.path).exists())
         .collect();
 
     db::write_db(pruned)?;
@@ -88,18 +88,24 @@ pub fn prune() -> Result<()> {
 // if another folder exists in the db with a different absolute path,
 // `get_shortest_distinct_path` will generate the non-clashing alias pair.
 // TODO settle mutable borrow warnings
-fn insert(db: &mut HashMap<String, String>, p: &PathBuf) {
+fn insert(db: &mut HashMap<String, db::GotoFile>, p: &PathBuf) {
     let v = p.display().to_string();
     let k = v.split("/").last().unwrap().to_string();
 
     match db.get(&k) {
-        None => db.insert(k, v),
+        None => db.insert(k, db::GotoFile { path: v, count: 0 }),
         Some(v_existing) => {
-            if *v_existing != p.display().to_string() {
+            if *v_existing.path != p.display().to_string() {
                 let (existing, clashing) =
-                    get_shortest_distinct_paths(&mut String::from(v_existing), &mut v.clone());
-                db.insert(existing, v_existing.to_string());
-                db.insert(clashing, v);
+                    get_shortest_distinct_paths(&mut v_existing.path.clone(), &mut v.clone());
+                db.insert(
+                    existing,
+                    db::GotoFile {
+                        path: v_existing.path.to_string(),
+                        count: v_existing.count,
+                    },
+                );
+                db.insert(clashing, db::GotoFile { path: v, count: 0 });
                 db.remove(&k);
             }
             None
