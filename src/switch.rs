@@ -85,19 +85,46 @@ fn position_vec(alias: &str, path: &str) -> Vec<i32> {
 #[test]
 fn fuzzy_test_takes_shortest() {
     let mut db = HashMap::new();
-    db.insert(String::from("my-very-long-alias"), String::from("1"));
-    db.insert(String::from("my-very-xxx-alias"), String::from("2"));
-    assert_eq!(fuzzy_lookup(db, "myalias").unwrap(), "2");
+    db.insert(
+        String::from("my-very-long-alias"),
+        db::GotoFile {
+            path: String::from("1"),
+            count: 0,
+        },
+    );
+    db.insert(
+        String::from("my-very-xxx-alias"),
+        db::GotoFile {
+            path: String::from("2"),
+            count: 0,
+        },
+    );
+    assert_eq!(fuzzy_lookup(&db, "myalias").unwrap(), "2");
 }
 
 #[test]
 fn fuzzy_test_takes_most_relevant() {
     let mut db = HashMap::new();
-    db.insert(String::from("media_engine"), String::from("1"));
+    db.insert(
+        String::from("media_engine"),
+        db::GotoFile {
+            path: String::from("1"),
+            count: 0,
+        },
+    );
     db.insert(
         String::from("manifest_services_so_long_name"),
-        String::from("2"),
+        db::GotoFile {
+            path: String::from("2"),
+            count: 0,
+        },
     );
-    db.insert(String::from("man_paginator"), String::from("3"));
-    assert_eq!(fuzzy_lookup(db, "mani").unwrap(), "2");
+    db.insert(
+        String::from("man_paginator"),
+        db::GotoFile {
+            path: String::from("3"),
+            count: 0,
+        },
+    );
+    assert_eq!(fuzzy_lookup(&db, "mani").unwrap(), "2");
 }
