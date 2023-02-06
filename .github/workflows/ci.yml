@@ -39,21 +39,21 @@ jobs:
         - win-gnu
         include:
         - build: pinned
-          os: ubuntu-18.04
-          rust: 1.42.0
+          os: ubuntu-22.04
+          rust: 1.65.0
         - build: stable
-          os: ubuntu-18.04
+          os: ubuntu-22.04
           rust: stable
         - build: musl
-          os: ubuntu-18.04
+          os: ubuntu-22.04
           rust: stable
           target: x86_64-unknown-linux-musl
         - build: mips
-          os: ubuntu-18.04
+          os: ubuntu-22.04
           rust: stable
           target: mips64-unknown-linux-gnuabi64
         - build: arm
-          os: ubuntu-18.04
+          os: ubuntu-22.04
           rust: stable
           # For stripping release binaries:
           # docker run --rm -v $PWD/target:/target:Z \
@@ -65,41 +65,37 @@ jobs:
           os: macos-latest
           rust: stable
         - build: win-msvc
-          os: windows-2019
+          os: windows-2022
           rust: stable
         - build: win-gnu
-          os: windows-2019
+          os: windows-2022
           rust: stable-x86_64-gnu
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install packages (Ubuntu)
-      if: matrix.os == 'ubuntu-18.04'
+      if: matrix.os == 'ubuntu-22.04'
       run: |
         ci/ubuntu-install-packages
 
     - name: Install packages (macOS)
-      if: matrix.os == 'macos-latest'
+      if: matrix.os == 'macos-12'
       run: |
         ci/macos-install-packages
 
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
-        profile: minimal
-        override: true
 
     - name: Use Cross
       if: matrix.target != ''
       run: |
-        # FIXME: to work around bugs in latest cross release, install master.
-        # See: https://github.com/rust-embedded/cross/issues/357
-        cargo install --git https://github.com/rust-embedded/cross cross
-        echo "::set-env name=CARGO::cross"
-        echo "::set-env name=TARGET_FLAGS::--target ${{ matrix.target }}"
-        echo "::set-env name=TARGET_DIR::./target/${{ matrix.target }}"
+        cargo install cross
+        echo "CARGO=cross" >> $GITHUB_ENV
+        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
+        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
 
     - name: Show command used for Cargo
       run: |
@@ -137,7 +133,7 @@ jobs:
 
   rustfmt:
     name: rustfmt
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -154,12 +150,12 @@ jobs:
 
   clippy:
     name: clippy
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: stable
         override: true
@@ -171,12 +167,12 @@ jobs:
 
   cargo-publish-dryrun:
     name: cargo publish (dry run)
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
         toolchain: stable
         override: true
