@@ -1,6 +1,6 @@
 use clap::{App, AppSettings, Arg, SubCommand};
 
-pub fn build_app() -> App<'static, 'static> {
+pub fn build_app() -> App<'static> {
     App::new("gt")
         .version(env!("CARGO_PKG_VERSION"))
         .setting(AppSettings::ColoredHelp)
@@ -14,12 +14,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .about("Add directories and sub-directories to index.")
                 .arg(
                     Arg::with_name("all")
-                        .short("a")
+                        .short('a')
                         .help("Adds all subdirectory."),
                 )
                 .arg(
                     Arg::with_name("recursive")
-                        .short("r")
+                        .short('r')
                         .takes_value(true)
                         .help("Recursively indexs."),
                 ),
@@ -29,12 +29,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .about("Remove directories and sub-directories to index.")
                 .arg(
                     Arg::with_name("all")
-                        .short("a")
+                        .short('a')
                         .help("Removes all subdirectory."),
                 )
                 .arg(
                     Arg::with_name("recursive")
-                        .short("r")
+                        .short('r')
                         .takes_value(true)
                         .help("Recursively removes."),
                 ),

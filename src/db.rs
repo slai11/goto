@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
@@ -7,6 +6,7 @@ use std::path::Path;
 use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
 use csv::Writer;
+use dirs;
 
 use crate::pretty_print;
 
@@ -14,7 +14,7 @@ use crate::pretty_print;
 pub fn read_db() -> Result<HashMap<String, String>> {
     let mut index_map = HashMap::new();
     let filename = "db.txt";
-    match env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto")) {
+    match dirs::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto")) {
         Some(path) => {
             let filepath = format!("{}/{}", path, filename);
             if !Path::new(&filepath).exists() {
@@ -38,7 +38,7 @@ pub fn read_db() -> Result<HashMap<String, String>> {
 }
 
 pub fn write_db(hm: HashMap<String, String>) -> Result<()> {
-    match env::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt")) {
+    match dirs::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt")) {
         Some(path) => {
             let mut wtr = Writer::from_path(path)?;
             for (k, v) in &hm {
