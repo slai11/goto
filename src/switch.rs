@@ -66,8 +66,7 @@ fn position_vec(alias: &str, path: &str) -> Vec<i32> {
     for c in path.chars() {
         // advance 1 char in alias until a match occurs
         loop {
-            let opt_char = alias_ptr.next();
-            match opt_char {
+            match alias_ptr.next() {
                 None => return vec,
                 Some(alias_c) => {
                     if alias_c == c {
