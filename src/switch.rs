@@ -11,29 +11,28 @@ pub fn switch_to(k: &str) -> Result<()> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    match db.get(k) {
-        Some(v) => {
-            writeln!(handle, "{}", &v).unwrap();
-            Ok(())
-        }
-
-        None => match fuzzy_lookup(db, k) {
+    let result = match db.get(k) {
+        Some(v) => Ok(v.path.clone()),
+        None => match fuzzy_lookup(&db, k) {
             None => Err(anyhow!(format!(
                 "No such alias: {}, try using the `ls` command to list the aliases.",
                 k
             ))),
-            Some(fk) => {
-                writeln!(handle, "{}", &fk).unwrap();
-                Ok(())
-            }
+            Some(fk) => Ok(fk.clone()),
         },
-    }
+    };
+
+    result.map(|filepath| {
+        db::update_count(db, &filepath);
+        writeln!(handle, "{}", &filepath).unwrap();
+        ()
+    })
 }
 
 // fuzzy_lookup filters aliases where the search term is a subsequence.
 // Aliases are ranked according to how closely packed the subsequence is and ties
 // are broken by length of the alias.
-fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
+fn fuzzy_lookup(db: &HashMap<String, db::GotoFile>, w: &str) -> Option<String> {
     let vec = db
         .iter()
         .map(|(k, v)| (v, position_vec(&k, w)))
@@ -50,8 +49,8 @@ fn fuzzy_lookup(db: HashMap<String, String>, w: &str) -> Option<String> {
         .map(|pair| {
             vec.iter()
                 .filter(|(_, v)| *v == pair.1)
-                .min_by(|a, b| a.0.len().cmp(&b.0.len())) // shortest alias
-                .map(|(k, _)| k.to_string())
+                .min_by(|a, b| a.0.path.len().cmp(&b.0.path.len())) // shortest alias
+                .map(|(k, _)| k.path.to_string())
         })
         .flatten()
 }

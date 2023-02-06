@@ -10,8 +10,13 @@ use dirs;
 
 use crate::pretty_print;
 
+pub struct GotoFile {
+    pub path: String,
+    pub count: i32,
+}
+
 // reads k,v pairs from db, returning a hmap
-pub fn read_db() -> Result<HashMap<String, String>> {
+pub fn read_db() -> Result<HashMap<String, GotoFile>> {
     let mut index_map = HashMap::new();
     let filename = "db.txt";
     match dirs::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto")) {
@@ -27,7 +32,18 @@ pub fn read_db() -> Result<HashMap<String, String>> {
                 let record = result?;
                 let alias = &record[0];
                 let fp = &record[1];
-                index_map.insert(String::from(alias), String::from(fp));
+                let freq_count: i32 = if record.len() > 2 {
+                    record[2].parse::<i32>().unwrap_or(0)
+                } else {
+                    0
+                };
+                index_map.insert(
+                    String::from(alias),
+                    GotoFile {
+                        path: String::from(fp),
+                        count: freq_count,
+                    },
+                );
             }
 
             Ok(index_map)
@@ -37,17 +53,27 @@ pub fn read_db() -> Result<HashMap<String, String>> {
     }
 }
 
-pub fn write_db(hm: HashMap<String, String>) -> Result<()> {
+pub fn write_db(hm: HashMap<String, GotoFile>) -> Result<()> {
     match dirs::home_dir().map(|p| format!("{}/{}", p.display(), ".config/goto/db.txt")) {
         Some(path) => {
             let mut wtr = Writer::from_path(path)?;
             for (k, v) in &hm {
-                wtr.write_record(&[k, v])?;
+                wtr.write_record(&[k, &v.path, &v.count.to_string()])?;
             }
             wtr.flush()?;
             Ok(())
         }
         None => Err(anyhow!("gt's index database does not exist!")),
+    }
+}
+
+pub fn update_count(mut hm: HashMap<String, GotoFile>, key: &String) {
+    for (_, val) in hm.iter_mut() {
+        if val.path == *key {
+            val.count += 1;
+            write_db(hm);
+            break;
+        }
     }
 }
 
@@ -63,6 +89,6 @@ pub fn list() -> Result<()> {
     let mut v = db.iter().collect::<Vec<_>>();
 
     println!("======= Current Indexed Directories (alias highlighted) =======");
-    v.sort_by(|a, b| a.1.cmp(&b.1));
+    v.sort_by(|a, b| a.1.path.cmp(&b.1.path));
     pretty_print::pretty_print(&v)
 }

@@ -2,7 +2,9 @@ use anyhow::Result;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-pub fn pretty_print(db: &[(&String, &String)]) -> Result<()> {
+use crate::db;
+
+pub fn pretty_print(db: &[(&String, &db::GotoFile)]) -> Result<()> {
     let mut dummy = Node {
         next_level: Vec::new(),
         name: "".to_string(),
@@ -17,8 +19,8 @@ pub fn pretty_print(db: &[(&String, &String)]) -> Result<()> {
 
         let mut ptr = &mut dummy;
 
-        let target_folder = v.split('/').last(); // really lazy, but its so fast anyway
-        for folder in v.split('/') {
+        let target_folder = v.path.split('/').last(); // really lazy, but its so fast anyway
+        for folder in v.path.split('/') {
             // ignore the first empty split item
             if folder != "" {
                 let val = if Some(folder) == target_folder {
