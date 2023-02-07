@@ -10,75 +10,44 @@ mod switch;
 
 fn run() -> Result<()> {
     let matches = app::build_app().get_matches();
-    if let Some(matches) = matches.subcommand_matches("add") {
-        let n: i8 = match matches.value_of("recursive") {
-            Some(level) => level.parse().unwrap(),
-            None => {
-                if matches.is_present("all") {
-                    1
-                } else {
-                    0
-                }
+    match matches.subcommand() {
+        Some(("ls", _)) => db::list(),
+        Some(("prune", _)) => indexer::prune(),
+        Some(("init", _)) => init::init(),
+        Some(("add", sub_matches)) | Some(("rm", sub_matches)) => {
+            let n: u8 = match sub_matches.get_one::<String>("recursive") {
+                Some(level) => level.trim().parse::<u8>().unwrap(),
+                None => match sub_matches.get_one::<bool>("all") {
+                    Some(true) => 1,
+                    _ => 0,
+                },
+            };
+
+            // perform add logic here
+            match matches.subcommand() {
+                Some(("add", _)) => indexer::update(n),
+                Some(("rm", _)) => indexer::remove(n),
+                _ => Ok(()),
             }
-        };
-
-        // perform add logic here
-        return indexer::update(n);
-    }
-
-    if let Some(matches) = matches.subcommand_matches("rm") {
-        let n: i8 = match matches.value_of("recursive") {
-            Some(level) => level.parse().unwrap(),
-            None => {
-                if matches.is_present("all") {
-                    1
-                } else {
-                    0
-                }
-            }
-        };
-
-        // perform add logic here
-        return indexer::remove(n);
-    }
-
-    if matches.subcommand_matches("ls").is_some() {
-        return db::list();
-    }
-
-    if matches.subcommand_matches("prune").is_some() {
-        return indexer::prune();
-    }
-
-    if let Some(subcmd) = matches.subcommand_matches("jump") {
-        return db::read_db()
+        }
+        Some(("jump", sub_matches)) => db::read_db()
             .map(|folders| {
                 let jumpsites = db::list_jumpsites(folders);
-                match subcmd.occurrences_of("number") {
-                    1 => {
-                        let idx = subcmd
-                            .get_one::<String>("number")
-                            .unwrap()
-                            .trim()
-                            .parse::<usize>()
-                            .unwrap();
+                match sub_matches.get_one::<String>("number") {
+                    Some(idx_str) => {
+                        let idx = idx_str.trim().parse::<usize>().unwrap();
                         let site: &db::GotoFile = &jumpsites[idx - 1];
                         switch::switch_to(&site.path, true)
                     }
                     _ => pretty_print::pretty_print_jumpsites(&jumpsites),
                 }
             })
-            .and_then(|f| f);
-    }
+            .and_then(|f| f),
 
-    if matches.subcommand_matches("init").is_some() {
-        init::init();
-        return Ok(());
-    }
-
-    match matches.occurrences_of("name") {
-        1 => switch::switch_to(matches.value_of("name").unwrap(), false),
-        _ => Err(anyhow!("Incorrect number of arguments.")),
+        _ => match matches.get_one::<String>("name") {
+            Some(name) => switch::switch_to(name, false),
+            _ => Err(anyhow!("Incorrect number of arguments.")),
+        },
     }
 }
 
