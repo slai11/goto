@@ -1,56 +1,28 @@
-use clap::{App, AppSettings, Arg, SubCommand};
+use clap::{arg, Command};
 
-pub fn build_app() -> App<'static> {
-    App::new("gt")
+pub fn build_app() -> Command {
+    Command::new("gt")
         .version(env!("CARGO_PKG_VERSION"))
-        .setting(AppSettings::ColoredHelp)
-        .subcommand(SubCommand::with_name("init").about("Initialises bash-script and database."))
-        .subcommand(SubCommand::with_name("ls").about("List all indexed directories."))
+        .subcommand_required(false)
+        .subcommand(Command::new("init").about("Initialises bash-script and database."))
+        .subcommand(Command::new("ls").about("List all indexed directories."))
+        .subcommand(Command::new("prune").about("Removes invalid indexes in the database."))
         .subcommand(
-            SubCommand::with_name("prune").about("Removes invalid indexes in the database."),
-        )
-        .subcommand(
-            SubCommand::with_name("add")
+            Command::new("add")
                 .about("Add directories and sub-directories to index.")
-                .arg(
-                    Arg::with_name("all")
-                        .short('a')
-                        .help("Adds all subdirectory."),
-                )
-                .arg(
-                    Arg::with_name("recursive")
-                        .short('r')
-                        .takes_value(true)
-                        .help("Recursively indexs."),
-                ),
+                .arg(arg!(-a --all "Adds all subdirectory."))
+                .arg(arg!(-r --recursive "Recursively indexs.")),
         )
         .subcommand(
-            SubCommand::with_name("rm")
+            Command::new("rm")
                 .about("Remove directories and sub-directories to index.")
-                .arg(
-                    Arg::with_name("all")
-                        .short('a')
-                        .help("Removes all subdirectory."),
-                )
-                .arg(
-                    Arg::with_name("recursive")
-                        .short('r')
-                        .takes_value(true)
-                        .help("Recursively removes."),
-                ),
+                .arg(arg!(-a --all "Removes all subdirectory."))
+                .arg(arg!(-r --recursive "Recursively removes.")),
         )
         .subcommand(
-            SubCommand::with_name("jump")
+            Command::new("jump")
                 .about("List most recently visited folders.")
-                .arg(
-                    Arg::with_name("number")
-                        .empty_values(false)
-                        .help("Jump to n-th most recently visited folder"),
-                ),
+                .arg(arg!([number] "Jump to n-th most recently visited folder")),
         )
-        .arg(
-            Arg::with_name("name")
-                .empty_values(true)
-                .help("Refers to name of index. Must be specific for now."),
-        )
+        .arg(arg!([name] "Refers to name of index. Must be specific for now."))
 }

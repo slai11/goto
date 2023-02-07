@@ -1,10 +1,12 @@
+use anyhow::Result;
 use std::io::{self, Write};
 
-pub fn init() {
+pub fn init() -> Result<()> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    writeln!(handle, "{}", posix_goto()).unwrap();
+    writeln!(handle, "{}", posix_goto())?;
+    Ok(())
 }
 
 fn posix_goto() -> String {
