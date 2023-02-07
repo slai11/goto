@@ -50,13 +50,34 @@ fn run() -> Result<()> {
         return indexer::prune();
     }
 
+    if let Some(subcmd) = matches.subcommand_matches("jump") {
+        return db::read_db()
+            .map(|folders| {
+                let jumpsites = db::list_jumpsites(folders);
+                match subcmd.occurrences_of("number") {
+                    1 => {
+                        let idx = subcmd
+                            .get_one::<String>("number")
+                            .unwrap()
+                            .trim()
+                            .parse::<usize>()
+                            .unwrap();
+                        let site: &db::GotoFile = &jumpsites[idx - 1];
+                        switch::switch_to(&site.path, true)
+                    }
+                    _ => pretty_print::pretty_print_jumpsites(&jumpsites),
+                }
+            })
+            .and_then(|f| f);
+    }
+
     if matches.subcommand_matches("init").is_some() {
         init::init();
         return Ok(());
     }
 
     match matches.occurrences_of("name") {
-        1 => switch::switch_to(matches.value_of("name").unwrap()),
+        1 => switch::switch_to(matches.value_of("name").unwrap(), false),
         _ => Err(anyhow!("Incorrect number of arguments.")),
     }
 }

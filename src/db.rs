@@ -10,9 +10,10 @@ use dirs;
 
 use crate::pretty_print;
 
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct GotoFile {
-    pub path: String,
     pub count: u32,
+    pub path: String,
 }
 
 // reads k,v pairs from db, returning a hmap
@@ -71,7 +72,7 @@ pub fn update_count(mut hm: HashMap<String, GotoFile>, key: &String) {
     for (_, val) in hm.iter_mut() {
         if val.path == *key {
             val.count += 1;
-            write_db(hm);
+            write_db(hm); // ignore errors, we can skip updates
             break;
         }
     }
@@ -90,5 +91,17 @@ pub fn list() -> Result<()> {
 
     println!("======= Current Indexed Directories (alias highlighted) =======");
     v.sort_by(|a, b| a.1.path.cmp(&b.1.path));
-    pretty_print::pretty_print(&v)
+    pretty_print::pretty_print_tree(&v)
+}
+
+pub fn list_jumpsites(hm: HashMap<String, GotoFile>) -> Vec<GotoFile> {
+    let mut vec: Vec<GotoFile> = Vec::new();
+    for (_, val) in hm.iter() {
+        if val.count > 0 {
+            vec.push(val.clone());
+        }
+    }
+    vec.sort();
+    vec.reverse();
+    vec
 }

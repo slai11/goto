@@ -39,6 +39,15 @@ pub fn build_app() -> App<'static> {
                         .help("Recursively removes."),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("jump")
+                .about("List most recently visited folders.")
+                .arg(
+                    Arg::with_name("number")
+                        .empty_values(false)
+                        .help("Jump to n-th most recently visited folder"),
+                ),
+        )
         .arg(
             Arg::with_name("name")
                 .empty_values(true)
