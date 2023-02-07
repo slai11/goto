@@ -11,13 +11,13 @@ pub fn build_app() -> Command {
             Command::new("add")
                 .about("Add directories and sub-directories to index.")
                 .arg(arg!(-a --all "Adds all subdirectory."))
-                .arg(arg!(-r --recursive "Recursively indexs.")),
+                .arg(arg!(-r --recursive [recursive] "Recursively indexs.")),
         )
         .subcommand(
             Command::new("rm")
                 .about("Remove directories and sub-directories to index.")
                 .arg(arg!(-a --all "Removes all subdirectory."))
-                .arg(arg!(-r --recursive "Recursively removes.")),
+                .arg(arg!(-r --recursive [recursive] "Recursively removes.")),
         )
         .subcommand(
             Command::new("jump")

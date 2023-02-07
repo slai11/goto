@@ -15,11 +15,11 @@ fn run() -> Result<()> {
         Some(("prune", _)) => indexer::prune(),
         Some(("init", _)) => init::init(),
         Some(("add", sub_matches)) | Some(("rm", sub_matches)) => {
-            let n: i8 = match sub_matches.get_one::<i8>("recursive") {
-                Some(level) => *level,
-                None => match sub_matches.get_one::<i8>("all") {
-                    Some(_) => 1,
-                    None => 0,
+            let n: u8 = match sub_matches.get_one::<String>("recursive") {
+                Some(level) => level.trim().parse::<u8>().unwrap(),
+                None => match sub_matches.get_one::<bool>("all") {
+                    Some(true) => 1,
+                    _ => 0,
                 },
             };
 

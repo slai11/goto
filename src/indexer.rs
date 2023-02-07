@@ -6,7 +6,7 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub fn update(level: i8) -> Result<()> {
+pub fn update(level: u8) -> Result<()> {
     let mut db = db::read_db()?;
     let path = env::current_dir()?;
     let mut cur = Vec::new();
@@ -39,7 +39,7 @@ pub fn update(level: i8) -> Result<()> {
     Ok(())
 }
 
-pub fn remove(level: i8) -> Result<()> {
+pub fn remove(level: u8) -> Result<()> {
     let mut db = db::read_db()?;
     let path = env::current_dir()?;
     let mut cur = Vec::new();
