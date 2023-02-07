@@ -6,19 +6,22 @@ use anyhow::{anyhow, Result};
 
 // switch_to writes a single file path to stdout which will be
 // picked up by the bash command to `cd` to.
-pub fn switch_to(k: &str) -> Result<()> {
+pub fn switch_to(k: &str, exact: bool) -> Result<()> {
     let db = db::read_db()?;
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    let result = match db.get(k) {
-        Some(v) => Ok(v.path.clone()),
-        None => match fuzzy_lookup(&db, k) {
-            None => Err(anyhow!(format!(
-                "No such alias: {}, try using the `ls` command to list the aliases.",
-                k
-            ))),
-            Some(fk) => Ok(fk.clone()),
+    let result = match exact {
+        true => Ok(k.to_string()),
+        false => match db.get(k) {
+            Some(v) => Ok(v.path.clone()),
+            None => match fuzzy_lookup(&db, k) {
+                None => Err(anyhow!(format!(
+                    "No such alias: {}, try using the `ls` command to list the aliases.",
+                    k
+                ))),
+                Some(fk) => Ok(fk.clone()),
+            },
         },
     };
 

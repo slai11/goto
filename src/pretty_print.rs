@@ -4,7 +4,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 use crate::db;
 
-pub fn pretty_print(db: &[(&String, &db::GotoFile)]) -> Result<()> {
+pub fn pretty_print_tree(db: &[(&String, &db::GotoFile)]) -> Result<()> {
     let mut dummy = Node {
         next_level: Vec::new(),
         name: "".to_string(),
@@ -37,6 +37,22 @@ pub fn pretty_print(db: &[(&String, &db::GotoFile)]) -> Result<()> {
     // dummy has no prefix and no sibling nodes,
     // hence we seed with empty string and 0.
     dummy.prettyprint("".to_string(), 0)
+}
+
+pub fn pretty_print_jumpsites(sites: &Vec<db::GotoFile>) -> Result<()> {
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+    writeln!(&mut stdout, "Listing all jump sites")?;
+    writeln!(&mut stdout)?;
+
+    let mut iter = sites.iter().enumerate();
+    while let Some((i, site)) = iter.next() {
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
+        write!(&mut stdout, "[{}]", i + 1)?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+        writeln!(&mut stdout, " {}", &site.path)?;
+    }
+    Ok(())
 }
 
 #[derive(Debug)]

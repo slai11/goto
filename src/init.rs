@@ -17,11 +17,18 @@ _gt() {{
     fi
 }}
 gt() {{
-    result="$(goto-rs "$@")" || return "$?"
-    if [ -d "$result" ]; then
-            _gt "$result" || return "$?"
-        elif [ -n "$result" ]; then
-            echo "$result"
+    if [[ -z $@ ]]; then
+        goto-rs jump
+        read jump_num
+        result=$(goto-rs jump "$jump_num")
+        cd $result
+    else
+        result="$(goto-rs "$@")" || return "$?"
+        if [ -d "$result" ]; then
+                _gt "$result" || return "$?"
+            elif [ -n "$result" ]; then
+                echo "$result"
+        fi
     fi
 }}
 "#,
