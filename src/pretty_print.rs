@@ -1,8 +1,8 @@
+use crate::db;
 use anyhow::Result;
+use itertools::Itertools;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-
-use crate::db;
 
 pub fn pretty_print_tree(db: &[(&String, &db::GotoFile)]) -> Result<()> {
     let mut dummy = Node {
@@ -47,10 +47,18 @@ pub fn pretty_print_jumpsites(sites: &Vec<db::GotoFile>) -> Result<()> {
 
     let mut iter = sites.iter().enumerate();
     while let Some((i, site)) = iter.next() {
+        write!(&mut stdout, "[")?;
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
-        write!(&mut stdout, "[{}]", i + 1)?;
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-        writeln!(&mut stdout, " {}", &site.path)?;
+        write!(&mut stdout, "{}", i + 1)?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+        write!(&mut stdout, "]")?;
+
+        // grey + white for contrast
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(128, 128, 128))))?;
+        let split = &mut site.path.split('/').collect_vec();
+        write!(&mut stdout, " {}/", split[..split.len() - 1].join("/"))?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+        writeln!(&mut stdout, "{}", split.last().unwrap())?;
     }
     Ok(())
 }
