@@ -72,7 +72,7 @@ pub fn update_count(mut hm: HashMap<String, GotoFile>, key: &String) {
     for (_, val) in hm.iter_mut() {
         if val.path == *key {
             val.count += 1;
-            write_db(hm); // ignore errors, we can skip updates
+            let _ = write_db(hm); // ignore errors, we can skip updates
             break;
         }
     }
