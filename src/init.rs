@@ -20,9 +20,7 @@ _gt() {{
 }}
 gt() {{
     if [[ -z $@ ]]; then
-        goto-rs jump
-        read jump_num
-        result=$(goto-rs jump "$jump_num")
+        result="$(goto-rs search)"
         cd $result
     else
         result="$(goto-rs "$@")" || return "$?"

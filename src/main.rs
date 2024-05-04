@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use std::process;
 
+use inquire::Select;
+
 mod app;
 mod db;
 mod indexer;
@@ -43,6 +45,17 @@ fn run() -> Result<()> {
                 }
             })
             .and_then(|f| f),
+
+        Some(("search", _)) => {
+            let jumpsites = match db::read_db() {
+                Ok(hash) => hash.values().map(|g| g.path.clone()).collect(),
+                Err(_) => vec![],
+            };
+
+            let site = Select::new("Jump to:", jumpsites).prompt()?;
+
+            switch::switch_to(&site, true)
+        }
 
         _ => match matches.get_one::<String>("name") {
             Some(name) => switch::switch_to(name, false),

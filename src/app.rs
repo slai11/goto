@@ -24,5 +24,6 @@ pub fn build_app() -> Command {
                 .about("List most recently visited folders.")
                 .arg(arg!([number] "Jump to n-th most recently visited folder")),
         )
+        .subcommand(Command::new("search").about("Launches interactive select list."))
         .arg(arg!([name] "Refers to name of index. Must be specific for now."))
 }
