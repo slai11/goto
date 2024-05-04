@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v0.4.0
+- Add functionality for list-based select.
+
 ## `v0.3.0`
 - Search considers sparsity of search term-alias subsequence.
 
