@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use itertools::Itertools;
 use std::process;
 
 use inquire::Select;
@@ -48,11 +49,17 @@ fn run() -> Result<()> {
 
         Some(("search", _)) => {
             let jumpsites = match db::read_db() {
-                Ok(hash) => hash.values().map(|g| g.path.clone()).collect(),
+                Ok(hash) => hash
+                    .values()
+                    .sorted_by(|a, b| Ord::cmp(&b.count, &a.count))
+                    .map(|g| g.path.clone())
+                    .collect(),
                 Err(_) => vec![],
             };
 
-            let site = Select::new("Jump to:", jumpsites).prompt()?;
+            let site = Select::new("Jump to:", jumpsites)
+                .with_page_size(20)
+                .prompt()?;
 
             switch::switch_to(&site, true)
         }
