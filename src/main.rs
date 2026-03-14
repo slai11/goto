@@ -17,45 +17,50 @@ fn run() -> Result<()> {
         Some(("ls", _)) => db::list(),
         Some(("prune", _)) => indexer::prune(),
         Some(("init", _)) => init::init(),
-        Some(("add", sub_matches)) | Some(("rm", sub_matches)) => {
-            let n: u8 = match sub_matches.get_one::<String>("recursive") {
-                Some(level) => level.trim().parse::<u8>().unwrap(),
-                None => match sub_matches.get_one::<bool>("all") {
-                    Some(true) => 1,
-                    _ => 0,
-                },
-            };
-
-            // perform add logic here
-            match matches.subcommand() {
-                Some(("add", _)) => indexer::update(n),
-                Some(("rm", _)) => indexer::remove(n),
-                _ => Ok(()),
+        Some(("add", sub_matches)) => {
+            let depth = sub_matches
+                .get_one::<u8>("recursive")
+                .copied()
+                .unwrap_or_else(|| if sub_matches.get_flag("all") { 1 } else { 0 });
+            indexer::update(depth)
+        }
+        Some(("rm", sub_matches)) => {
+            let depth = sub_matches
+                .get_one::<u8>("recursive")
+                .copied()
+                .unwrap_or_else(|| if sub_matches.get_flag("all") { 1 } else { 0 });
+            indexer::remove(depth)
+        }
+        Some(("jump", sub_matches)) => {
+            let jumpsites = db::list_jumpsites(db::read_db()?);
+            match sub_matches.get_one::<usize>("number").copied() {
+                Some(0) => Err(anyhow!("Jump index must be at least 1.")),
+                Some(index) => {
+                    let site = jumpsites.get(index - 1).ok_or_else(|| {
+                        anyhow!(
+                            "Jump index {} is out of range. Available entries: {}.",
+                            index,
+                            jumpsites.len()
+                        )
+                    })?;
+                    switch::switch_to(&site.path, true)
+                }
+                None => pretty_print::pretty_print_jumpsites(&jumpsites),
             }
         }
-        Some(("jump", sub_matches)) => db::read_db()
-            .map(|folders| {
-                let jumpsites = db::list_jumpsites(folders);
-                match sub_matches.get_one::<String>("number") {
-                    Some(idx_str) => {
-                        let idx = idx_str.trim().parse::<usize>().unwrap();
-                        let site: &db::GotoFile = &jumpsites[idx - 1];
-                        switch::switch_to(&site.path, true)
-                    }
-                    _ => pretty_print::pretty_print_jumpsites(&jumpsites),
-                }
-            })
-            .and_then(|f| f),
 
         Some(("search", _)) => {
-            let jumpsites = match db::read_db() {
-                Ok(hash) => hash
-                    .values()
-                    .sorted_by(|a, b| Ord::cmp(&b.count, &a.count))
-                    .map(|g| g.path.clone())
-                    .collect(),
-                Err(_) => vec![],
-            };
+            let jumpsites = db::read_db()?
+                .values()
+                .sorted_by(|a, b| Ord::cmp(&b.count, &a.count))
+                .map(|g| g.path.clone())
+                .collect::<Vec<_>>();
+
+            if jumpsites.is_empty() {
+                return Err(anyhow!(
+                    "No jump history found yet. Use `gt <alias>` first or run `gt ls`."
+                ));
+            }
 
             let site = Select::new("Jump to:", jumpsites)
                 .with_page_size(20)
@@ -72,14 +77,8 @@ fn run() -> Result<()> {
 }
 
 fn main() {
-    let result = run();
-    match result {
-        Ok(_) => {
-            process::exit(0);
-        }
-        Err(err) => {
-            println!("[gt error]: {}", err);
-            process::exit(1);
-        }
+    if let Err(err) = run() {
+        eprintln!("[gt error]: {}", err);
+        process::exit(1);
     }
 }

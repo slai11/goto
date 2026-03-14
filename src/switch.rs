@@ -11,58 +11,60 @@ pub fn switch_to(k: &str, exact: bool) -> Result<()> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    let result = match exact {
-        true => Ok(k.to_string()),
+    let filepath = match exact {
+        true => k.to_string(),
         false => match db.get(k) {
-            Some(v) => Ok(v.path.clone()),
-            None => match fuzzy_lookup(&db, k) {
-                None => Err(anyhow!(format!(
+            Some(v) => v.path.clone(),
+            None => fuzzy_lookup(&db, k).ok_or_else(|| {
+                anyhow!(
                     "No such alias: {}, try using the `ls` command to list the aliases.",
                     k
-                ))),
-                Some(fk) => Ok(fk.clone()),
-            },
+                )
+            })?,
         },
     };
 
-    result.map(|filepath| {
-        db::update_count(db, &filepath);
-        writeln!(handle, "{}", &filepath).unwrap();
-        ()
-    })
+    let _ = db::update_count(db, &filepath);
+    writeln!(handle, "{}", filepath)?;
+    Ok(())
 }
 
 // fuzzy_lookup filters aliases where the search term is a subsequence.
 // Aliases are ranked according to how closely packed the subsequence is and ties
 // are broken by length of the alias.
 fn fuzzy_lookup(db: &HashMap<String, db::GotoFile>, w: &str) -> Option<String> {
-    let vec = db
+    let candidates = db
         .iter()
-        .map(|(k, v)| (v, position_vec(&k, w)))
-        .filter(|(_, v)| v.len() == w.len())
-        .map(|(k, mut v)| {
+        .map(|(alias, entry)| (alias.as_str(), entry, position_vec(alias, w)))
+        .filter(|(_, _, positions)| positions.len() == w.len())
+        .map(|(alias, entry, mut v)| {
             v = v.windows(2).map(|x| x[1] - x[0]).collect::<Vec<_>>();
             v.sort();
-            (k, v.iter().fold(0, |acc, x| acc * 10 + x))
+            (
+                alias,
+                entry,
+                v.iter().copied().fold(0, |acc, x| acc * 10 + x),
+            )
         })
         .collect::<Vec<_>>();
 
-    vec.iter()
-        .min_by(|a, b| a.1.cmp(&b.1)) // best distance score
-        .map(|pair| {
-            vec.iter()
-                .filter(|(_, v)| *v == pair.1)
-                .min_by(|a, b| a.0.path.len().cmp(&b.0.path.len())) // shortest alias
-                .map(|(k, _)| k.path.to_string())
+    candidates
+        .iter()
+        .min_by(|a, b| a.2.cmp(&b.2))
+        .and_then(|(_, _, best_score)| {
+            candidates
+                .iter()
+                .filter(|(_, _, score)| *score == *best_score)
+                .min_by(|a, b| a.0.len().cmp(&b.0.len()))
+                .map(|(_, entry, _)| entry.path.to_string())
         })
-        .flatten()
 }
 
 // position_vec returns a vec highlighting positions where search terms
 // shows up in alias.
-fn position_vec(alias: &str, path: &str) -> Vec<i32> {
+fn position_vec(alias: &str, path: &str) -> Vec<usize> {
     let mut alias_ptr = alias.chars();
-    let mut vec = Vec::<i32>::new();
+    let mut vec = Vec::<usize>::new();
     let mut idx = 0;
 
     for c in path.chars() {
