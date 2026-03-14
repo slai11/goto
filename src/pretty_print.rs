@@ -22,14 +22,14 @@ pub fn pretty_print_tree(db: &[(&String, &db::GotoFile)]) -> Result<()> {
         let target_folder = v.path.split('/').last(); // really lazy, but its so fast anyway
         for folder in v.path.split('/') {
             // ignore the first empty split item
-            if folder != "" {
+            if !folder.is_empty() {
                 let val = if Some(folder) == target_folder {
                     Some(k.to_string())
                 } else {
                     None
                 };
-                ptr.insert_if_absent(&folder, val);
-                ptr = ptr.find(&folder).unwrap();
+                ptr.insert_if_absent(folder, val);
+                ptr = ptr.find(folder).unwrap();
             }
         }
     }
@@ -39,14 +39,13 @@ pub fn pretty_print_tree(db: &[(&String, &db::GotoFile)]) -> Result<()> {
     dummy.prettyprint("".to_string(), 0)
 }
 
-pub fn pretty_print_jumpsites(sites: &Vec<db::GotoFile>) -> Result<()> {
+pub fn pretty_print_jumpsites(sites: &[db::GotoFile]) -> Result<()> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
     writeln!(&mut stdout, "Listing all jump sites")?;
     writeln!(&mut stdout)?;
 
-    let mut iter = sites.iter().enumerate();
-    while let Some((i, site)) = iter.next() {
+    for (i, site) in sites.iter().enumerate() {
         write!(&mut stdout, "[")?;
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
         write!(&mut stdout, "{}", i + 1)?;
@@ -86,11 +85,11 @@ impl Node {
 
     // Creates a new node and push into back of vector if it does not exist
     fn insert_if_absent(&mut self, folder: &str, val: Option<String>) {
-        if self.next_level.iter().find(|n| n.name == folder).is_none() {
+        if !self.next_level.iter().any(|n| n.name == folder) {
             self.next_level.push(Node {
                 next_level: Vec::new(),
                 name: folder.to_string(),
-                val: val,
+                val,
                 position: self.next_level.len() + 1,
             })
         }
@@ -105,7 +104,7 @@ impl Node {
         let indent = "  ";
         let has_next = self.position < node_fam_size;
 
-        if self.name != "" {
+        if !self.name.is_empty() {
             let mut stdout = StandardStream::stdout(ColorChoice::Always);
             stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
 

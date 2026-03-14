@@ -1,220 +1,144 @@
-# The way this works is a little weird. But basically, the set-release-vars job
-# runs purely to initialize the GitHub release itself. Once done, the upload
-# URL of the release is saved as an artifact.
-#
-# The build-release job runs only once set-release-vars is finished. It gets
-# the release upload URL by downloading the corresponding artifact (which was
-# uploaded by set-release-vars). It then builds the release executables for each
-# supported platform and attaches them as release assets to the previously
-# created release.
-#
-# The key here is that we create the release only once.
-
 name: release
+
 on:
   push:
-      # Enable when testing release infrastructure on a branch.
-      #branches:
-      #- fix--releaseyml
     tags:
-    - 'v[0-9]+.[0-9]+.[0-9]+'
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
 jobs:
-  set-release-vars:
-    name: set-release-vars
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create artifacts directory
-        run: mkdir artifacts
-
-      - name: Get the release version from the tag
-        if: env.RELEASE_VERSION == ''
-        run: |
-          RELEASE_VERSION=${GITHUB_REF#refs/tags/}
-          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
-          echo "version is: ${RELEASE_VERSION}"
-
-      - name: Save version number to artifact
-        run: echo "${{ env.RELEASE_VERSION }}" > artifacts/release-version
-
-      - name: Save release upload URL to artifact
-        run: echo "${{ steps.release.outputs.upload_url }}" > artifacts/release-upload-url
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: artifacts
-          path: artifacts
-
   build-release:
     name: build-release
-    needs: ['set-release-vars']
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO: cargo
-      # When CARGO is set to CROSS, this is set to `--target matrix.target`.
-      TARGET_FLAGS: ''
-      # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
-      TARGET_DIR: ./target
-      # Emit backtraces on panics.
-      RUST_BACKTRACE: 1
-      # Build static releases with PCRE2.
-      PCRE2_SYS_STATIC: 1
-      # Apparently needed to use a2x on macOS.
-      XML_CATALOG_FILES: /usr/local/etc/xml/catalog
     strategy:
       matrix:
-        build: [linux, linux-arm, macos, win-msvc, win-gnu]
         include:
-        - build: linux
-          os: ubuntu-22.04
-          rust: stable
-          target: x86_64-unknown-linux-musl
-        - build: linux-arm
-          os: ubuntu-22.04
-          rust: stable
-          target: arm-unknown-linux-gnueabihf
-        - build: macos
-          os: macos-12
-          rust: stable
-          target: x86_64-apple-darwin
-        - build: win-msvc
-          os: windows-2022
-          rust: stable
-          target: x86_64-pc-windows-msvc
-        - build: win-gnu
-          os: windows-2022
-          rust: stable-x86_64-gnu
-          target: x86_64-pc-windows-gnu
-
+          - build: linux
+            os: ubuntu-22.04
+            rust: 1.78.0
+            target: x86_64-unknown-linux-musl
+            use-cross: true
+            asset-ext: tar.gz
+          - build: linux-arm
+            os: ubuntu-22.04
+            rust: 1.78.0
+            target: arm-unknown-linux-gnueabihf
+            use-cross: true
+            asset-ext: tar.gz
+          - build: macos
+            os: macos-14
+            rust: 1.78.0
+            target: x86_64-apple-darwin
+            use-cross: false
+            asset-ext: tar.gz
+          - build: win-msvc
+            os: windows-2022
+            rust: 1.78.0
+            target: x86_64-pc-windows-msvc
+            use-cross: false
+            asset-ext: zip
+          - build: win-gnu
+            os: windows-2022
+            rust: 1.78.0
+            target: x86_64-pc-windows-gnu
+            use-cross: false
+            asset-ext: zip
+    env:
+      CARGO: cargo
+      TARGET_FLAGS: --target ${{ matrix.target }}
+      RELEASE_VERSION: ${{ github.ref_name }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 1
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install packages (Ubuntu)
-      if: matrix.os == 'ubuntu-22.04'
-      run: |
-        ci/ubuntu-install-packages
+      - name: Install packages (Ubuntu)
+        if: matrix.os == 'ubuntu-22.04'
+        run: ci/ubuntu-install-packages
 
-    - name: Install packages (macOS)
-      if: matrix.os == 'macos-12'
-      run: |
-        ci/macos-install-packages
+      - name: Install packages (macOS)
+        if: matrix.os == 'macos-14'
+        run: ci/macos-install-packages
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-        profile: minimal
-        override: true
-        target: ${{ matrix.target }}
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          target: ${{ matrix.target }}
 
-    - name: Use Cross
-      # if: matrix.os != 'windows-2019'
-      run: |
-        # FIXME: to work around bugs in latest cross release, install master.
-        # See: https://github.com/rust-embedded/cross/issues/357
-        cargo install --git https://github.com/rust-embedded/cross cross
-        echo "CARGO=cross" >> $GITHUB_ENV
-        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
-        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
+      - name: Use Cross
+        if: matrix.use-cross
+        shell: bash
+        run: |
+          cargo install cross --locked
+          echo "CARGO=cross" >> "$GITHUB_ENV"
 
-    - name: Show command used for Cargo
-      run: |
-        echo "cargo command is: ${{ env.CARGO }}"
-        echo "target flag is: ${{ env.TARGET_FLAGS }}"
-        echo "target dir is: ${{ env.TARGET_DIR }}"
+      - name: Build release binary
+        run: ${{ env.CARGO }} build --locked --release ${{ env.TARGET_FLAGS }}
 
-    - name: Get release download URL
-      uses: actions/download-artifact@v1
-      with:
-        name: artifacts
-        path: artifacts
+      - name: Build archive
+        shell: bash
+        run: |
+          staging="goto-rs-${RELEASE_VERSION}-${{ matrix.target }}"
+          asset="${staging}.${{ matrix.asset-ext }}"
+          mkdir -p "$staging"
 
-    - name: Set release version and upload url
-      shell: bash
-      run: |
-        release_upload_url="$(cat artifacts/release-upload-url)"
-        echo "RELEASE_UPLOAD_URL=$release_upload_url" >> $GITHUB_ENV
-        RELEASE_VERSION="$(cat artifacts/release-version)"
-        echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
-        echo "release version: ${RELEASE_VERSION}"
+          cp README.md CHANGELOG.md LICENSE "$staging/"
 
-    - name: Build release binary
-      run: ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
+          if [[ "${{ matrix.os }}" == windows-* ]]; then
+            cp "target/${{ matrix.target }}/release/goto-rs.exe" "$staging/"
+            7z a "$asset" "$staging"
+          else
+            cp "target/${{ matrix.target }}/release/goto-rs" "$staging/"
+            tar czf "$asset" "$staging"
+          fi
 
-    - name: Strip release binary (linux and macos)
-      if: matrix.build == 'linux' || matrix.build == 'macos'
-      run: strip "target/${{ matrix.target }}/release/goto-rs"
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
 
-    - name: Strip release binary (arm)
-      if: matrix.build == 'linux-arm'
-      run: |
-        docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          rustembedded/cross:arm-unknown-linux-gnueabihf \
-          arm-linux-gnueabihf-strip \
-          /target/arm-unknown-linux-gnueabihf/release/goto-rs
+      - name: Upload packaged asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ env.ASSET }}
 
-    - name: Build archive
-      shell: bash
-      run: |
-        outdir="$(ci/cargo-out-dir "${{ env.TARGET_DIR }}")"
-        staging="goto-rs-${{ env.RELEASE_VERSION }}-${{ matrix.target }}"
-        mkdir -p "$staging"
+  publish-release:
+    name: publish-release
+    needs: build-release
+    runs-on: ubuntu-22.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_VERSION: ${{ github.ref_name }}
+    steps:
+      - name: Download packaged assets
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
 
-        cp {README.md,CHANGELOG.md,LICENSE} "$staging/"
-
-        if [ "${{ matrix.os }}" = "windows-2019" ]; then
-          cp "target/${{ matrix.target }}/release/goto-rs.exe" "$staging/"
-          7z a "$staging.zip" "$staging"
-          echo "ASSET=$staging.zip" >> $GITHUB_ENV
-        else
-          # The man page is only generated on Unix systems.
-          cp "target/${{ matrix.target }}/release/goto-rs" "$staging/"
-          tar czf "$staging.tar.gz" "$staging"
-          echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
-        fi
-
-    - name: Upload release archive
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ${{ env.ASSET }}
-        asset_name: ${{ env.ASSET }}
-        asset_content_type: application/octet-stream
+      - name: Create or update GitHub release
+        shell: bash
+        run: |
+          if ! gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
+            gh release create "$RELEASE_VERSION" --verify-tag --generate-notes
+          fi
+          gh release upload "$RELEASE_VERSION" dist/*/* --clobber
 
   cargo-publish:
     name: cargo publish
-    needs: ['set-release-vars']
+    needs: publish-release
     runs-on: ubuntu-22.04
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: stable
-        override: true
-        profile: minimal
-        components: clippy
-    - name: Get release download URL
-      uses: actions/download-artifact@v1
-      with:
-        name: artifacts
-        path: artifacts
-    - name: Retrieve release version and remove dirty artifacts
-      shell: bash
-      run: |
-        RELEASE_VERSION="$(cat artifacts/release-version)"
-        echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
-        echo "release version: ${RELEASE_VERSION}"
-        rm -rf artifacts/
-    - name: Publish to crates.io
-      if: env.RELEASE_VERSION != 'v0.0.0'
-      run: |
-        cargo login ${{ secrets.CRATES_IO_TOKEN }}
-        cargo publish
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.78.0
+          profile: minimal
+
+      - name: Publish to crates.io
+        run: cargo publish --locked

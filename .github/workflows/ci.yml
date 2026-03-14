@@ -35,7 +35,7 @@ jobs:
         include:
         - build: pinned
           os: ubuntu-22.04
-          rust: 1.74.0
+          rust: 1.78.0
         - build: stable
           os: ubuntu-22.04
           rust: stable
@@ -53,8 +53,8 @@ jobs:
           #   /target/arm-unknown-linux-gnueabihf/debug/goto
           target: arm-unknown-linux-gnueabihf
         - build: macos
-          os: macos-latest
-          rust: stable
+          os: macos-14
+          rust: 1.78.0
         - build: win-msvc
           os: windows-2022
           rust: stable
@@ -63,7 +63,7 @@ jobs:
           rust: stable-x86_64-gnu
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install packages (Ubuntu)
       if: matrix.os == 'ubuntu-22.04'
@@ -71,7 +71,7 @@ jobs:
         ci/ubuntu-install-packages
 
     - name: Install packages (macOS)
-      if: matrix.os == 'macos-12'
+      if: matrix.os == 'macos-14'
       run: |
         ci/macos-install-packages
 
@@ -83,7 +83,7 @@ jobs:
     - name: Use Cross
       if: matrix.target != ''
       run: |
-        cargo install cross
+        cargo install cross --locked
         echo "CARGO=cross" >> $GITHUB_ENV
         echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
         echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
@@ -94,7 +94,7 @@ jobs:
         echo "target flag is: ${{ env.TARGET_FLAGS }}"
 
     - name: Build goto and all crates
-      run: ${{ env.CARGO }} build --verbose --all ${{ env.TARGET_FLAGS }}
+      run: ${{ env.CARGO }} build --verbose --locked --all ${{ env.TARGET_FLAGS }}
 
     # This is useful for debugging problems when the expected build artifacts
     # (like shell completions and man pages) aren't generated.
@@ -112,7 +112,7 @@ jobs:
 
     - name: Run tests (sans cross)
       if: matrix.target == ''
-      run: ${{ env.CARGO }} test --verbose --all ${{ env.TARGET_FLAGS }}
+      run: ${{ env.CARGO }} test --verbose --locked --all ${{ env.TARGET_FLAGS }}
 
     - name: Run tests (with cross)
       # These tests should actually work, but they almost double the runtime.
@@ -120,19 +120,18 @@ jobs:
       # enabled, every integration test is run twice: one with the default
       # regex engine and once with PCRE2.
       if: matrix.target != ''
-      run: ${{ env.CARGO }} test --verbose --all ${{ env.TARGET_FLAGS }}
+      run: ${{ env.CARGO }} test --verbose --locked --all ${{ env.TARGET_FLAGS }}
 
   rustfmt:
     name: rustfmt
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Install Rust
-      uses: actions-rs/toolchain@v1
+      uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: stable
-        override: true
+        toolchain: 1.78.0
         profile: minimal
         components: rustfmt
     - name: Check formatting
@@ -144,7 +143,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
@@ -154,14 +153,14 @@ jobs:
         components: clippy
     - name: Check clippy linting
       run: |
-        cargo clippy -v --locked --all
+        cargo clippy -v --locked --all-targets --all-features -- -D warnings
 
   cargo-publish-dryrun:
     name: cargo publish (dry run)
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
@@ -171,4 +170,4 @@ jobs:
         components: clippy
     - name: Publish to crates.io
       run: |
-        cargo publish --dry-run
+        cargo publish --locked --dry-run

@@ -13,21 +13,23 @@ fn posix_goto() -> String {
     String::from(
         r#"
 _gt() {{
-    cd "$@" || return "$?"
+    cd -- "$@" || return "$?"
     if [ -n "$_ZO_ECHO" ]; then
-        echo "$PWD"
+        printf '%s\n' "$PWD"
     fi
 }}
 gt() {{
-    if [[ -z $@ ]]; then
-        result="$(goto-rs search)"
-        cd $result
+    if [ "$#" -eq 0 ]; then
+        result="$(goto-rs search)" || return "$?"
+        if [ -n "$result" ]; then
+            cd -- "$result" || return "$?"
+        fi
     else
         result="$(goto-rs "$@")" || return "$?"
         if [ -d "$result" ]; then
-                _gt "$result" || return "$?"
-            elif [ -n "$result" ]; then
-                echo "$result"
+            _gt "$result" || return "$?"
+        elif [ -n "$result" ]; then
+            printf '%s\n' "$result"
         fi
     fi
 }}
