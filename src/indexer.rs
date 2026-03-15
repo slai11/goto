@@ -83,7 +83,10 @@ pub fn prune() -> Result<()> {
 // if another folder exists in the db with a different absolute path,
 // `get_shortest_distinct_path` will generate the non-clashing alias pair.
 pub fn insert_path(db: &mut HashMap<String, db::GotoFile>, p: &Path) {
-    if db.values().any(|entry| entry.path == p.display().to_string()) {
+    if db
+        .values()
+        .any(|entry| entry.path == p.display().to_string())
+    {
         return;
     }
 

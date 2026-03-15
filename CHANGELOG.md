@@ -1,7 +1,10 @@
 # CHANGELOG
 
 ## v0.4.0
-- Add functionality for list-based select.
+- Add interactive list-based select.
+- Learn directories automatically from zsh `cd` usage.
+- Rank jumps using recency and frecency instead of count alone.
+- Match multi-term queries against aliases and full paths.
 
 ## `v0.3.0`
 - Search considers sparsity of search term-alias subsequence.

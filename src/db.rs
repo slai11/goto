@@ -64,7 +64,12 @@ pub fn write_db(hm: HashMap<String, GotoFile>) -> Result<()> {
     for (k, v) in &hm {
         let count = v.count.to_string();
         let last_accessed = v.last_accessed.map(|ts| ts.to_string()).unwrap_or_default();
-        wtr.write_record([k.as_str(), v.path.as_str(), count.as_str(), last_accessed.as_str()])?;
+        wtr.write_record([
+            k.as_str(),
+            v.path.as_str(),
+            count.as_str(),
+            last_accessed.as_str(),
+        ])?;
     }
     wtr.flush()?;
     Ok(())

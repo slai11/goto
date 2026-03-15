@@ -131,7 +131,10 @@ pub fn ranked_matches(
     candidates.sort_by(|a, b| {
         (&a.0, &a.1, &a.2, &a.3, &a.4, &a.5).cmp(&(&b.0, &b.1, &b.2, &b.3, &b.4, &b.5))
     });
-    candidates.into_iter().map(|(_, _, _, _, _, _, entry)| entry).collect()
+    candidates
+        .into_iter()
+        .map(|(_, _, _, _, _, _, entry)| entry)
+        .collect()
 }
 
 fn query_match_score(alias: &str, path: &str, terms: &[String]) -> Option<i64> {
@@ -190,7 +193,11 @@ fn term_match_score(
         best = best.max(170);
     }
 
-    if best > 0 { Some(best) } else { None }
+    if best > 0 {
+        Some(best)
+    } else {
+        None
+    }
 }
 
 fn tokenize(input: &str) -> impl Iterator<Item = String> + '_ {
@@ -255,7 +262,10 @@ fn ranked_matches_use_path_terms_and_multiple_words() {
         3_000,
         JumpOrder::Frecency,
     );
-    assert_eq!(ranked.first().map(|entry| entry.path.as_str()), Some("/Users/sylvester/work/client-beta/personal"));
+    assert_eq!(
+        ranked.first().map(|entry| entry.path.as_str()),
+        Some("/Users/sylvester/work/client-beta/personal")
+    );
 }
 
 #[test]
@@ -277,13 +287,11 @@ fn ranked_matches_prefer_recent_when_match_quality_ties() {
             last_accessed: Some(100),
         },
     );
-    let ranked = ranked_matches(
-        &db,
-        &[String::from("notes")],
-        2_100,
-        JumpOrder::Frecency,
+    let ranked = ranked_matches(&db, &[String::from("notes")], 2_100, JumpOrder::Frecency);
+    assert_eq!(
+        ranked.first().map(|entry| entry.path.as_str()),
+        Some("/tmp/notes")
     );
-    assert_eq!(ranked.first().map(|entry| entry.path.as_str()), Some("/tmp/notes"));
 }
 
 #[test]
