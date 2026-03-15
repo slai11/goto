@@ -16,7 +16,7 @@ pub fn update(level: u8) -> Result<()> {
     for _ in 0..=level {
         while let Some(p) = cur.pop() {
             // set immediate folder name as alias
-            insert(&mut db, &p);
+            insert_path(&mut db, &p);
 
             // push sub-directories into next
             if p.is_dir() {
@@ -79,10 +79,14 @@ pub fn prune() -> Result<()> {
     Ok(())
 }
 
-// insert handles the logic for inserting a new path
+// insert_path handles the logic for inserting a new path.
 // if another folder exists in the db with a different absolute path,
 // `get_shortest_distinct_path` will generate the non-clashing alias pair.
-fn insert(db: &mut HashMap<String, db::GotoFile>, p: &Path) {
+pub fn insert_path(db: &mut HashMap<String, db::GotoFile>, p: &Path) {
+    if db.values().any(|entry| entry.path == p.display().to_string()) {
+        return;
+    }
+
     let v = p.display().to_string();
     let k = p
         .file_name()
@@ -91,7 +95,14 @@ fn insert(db: &mut HashMap<String, db::GotoFile>, p: &Path) {
         .to_string();
 
     match db.get(&k) {
-        None => db.insert(k, db::GotoFile { path: v, count: 0 }),
+        None => db.insert(
+            k,
+            db::GotoFile {
+                path: v,
+                count: 0,
+                last_accessed: None,
+            },
+        ),
         Some(v_existing) => {
             if v_existing.path != p.display().to_string() {
                 let (existing, clashing) = get_shortest_distinct_paths(&v_existing.path, &v);
@@ -100,9 +111,17 @@ fn insert(db: &mut HashMap<String, db::GotoFile>, p: &Path) {
                     db::GotoFile {
                         path: v_existing.path.to_string(),
                         count: v_existing.count,
+                        last_accessed: v_existing.last_accessed,
                     },
                 );
-                db.insert(clashing, db::GotoFile { path: v, count: 0 });
+                db.insert(
+                    clashing,
+                    db::GotoFile {
+                        path: v,
+                        count: 0,
+                        last_accessed: None,
+                    },
+                );
                 db.remove(&k);
             }
             None

@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use itertools::Itertools;
 use std::process;
 
 use inquire::Select;
@@ -17,6 +16,12 @@ fn run() -> Result<()> {
         Some(("ls", _)) => db::list(),
         Some(("prune", _)) => indexer::prune(),
         Some(("init", _)) => init::init(),
+        Some(("record", sub_matches)) => {
+            let path = sub_matches
+                .get_one::<String>("path")
+                .ok_or_else(|| anyhow!("Path is required."))?;
+            db::learn_path(std::path::Path::new(path), db::now_ts()?)
+        }
         Some(("add", sub_matches)) => {
             let depth = sub_matches
                 .get_one::<u8>("recursive")
@@ -32,7 +37,12 @@ fn run() -> Result<()> {
             indexer::remove(depth)
         }
         Some(("jump", sub_matches)) => {
-            let jumpsites = db::list_jumpsites(db::read_db()?);
+            let order = if sub_matches.get_flag("recent") {
+                switch::JumpOrder::Recent
+            } else {
+                switch::JumpOrder::Frecency
+            };
+            let jumpsites = switch::ranked_paths_for_jump(db::read_db()?, db::now_ts()?, order);
             match sub_matches.get_one::<usize>("number").copied() {
                 Some(0) => Err(anyhow!("Jump index must be at least 1.")),
                 Some(index) => {
@@ -43,22 +53,30 @@ fn run() -> Result<()> {
                             jumpsites.len()
                         )
                     })?;
-                    switch::switch_to(&site.path, true)
+                    switch::switch_to_path(&site.path)
                 }
                 None => pretty_print::pretty_print_jumpsites(&jumpsites),
             }
         }
 
-        Some(("search", _)) => {
-            let jumpsites = db::read_db()?
-                .values()
-                .sorted_by(|a, b| Ord::cmp(&b.count, &a.count))
-                .map(|g| g.path.clone())
-                .collect::<Vec<_>>();
+        Some(("search", sub_matches)) => {
+            let query = sub_matches
+                .get_many::<String>("query")
+                .map(|values| values.cloned().collect::<Vec<_>>())
+                .unwrap_or_default();
+            let jumpsites = switch::ranked_matches(
+                &db::read_db()?,
+                &query,
+                db::now_ts()?,
+                switch::JumpOrder::Frecency,
+            )
+            .into_iter()
+            .map(|entry| entry.path)
+            .collect::<Vec<_>>();
 
             if jumpsites.is_empty() {
                 return Err(anyhow!(
-                    "No jump history found yet. Use `gt <alias>` first or run `gt ls`."
+                    "No learned directories found yet. Use `gt` normally or `gt add` first."
                 ));
             }
 
@@ -66,13 +84,21 @@ fn run() -> Result<()> {
                 .with_page_size(20)
                 .prompt()?;
 
-            switch::switch_to(&site, true)
+            switch::switch_to_path(&site)
         }
 
-        _ => match matches.get_one::<String>("name") {
-            Some(name) => switch::switch_to(name, false),
-            _ => Err(anyhow!("Incorrect number of arguments.")),
-        },
+        _ => {
+            let query = matches
+                .get_many::<String>("query")
+                .map(|values| values.cloned().collect::<Vec<_>>())
+                .unwrap_or_default();
+
+            if query.is_empty() {
+                Err(anyhow!("Provide a query or use `gt search`."))
+            } else {
+                switch::switch_to_query(&query)
+            }
+        }
     }
 }
 

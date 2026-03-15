@@ -2,16 +2,19 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
 use csv::ReaderBuilder;
 use csv::Writer;
 
+use crate::indexer;
 use crate::pretty_print;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GotoFile {
     pub count: u32,
+    pub last_accessed: Option<i64>,
     pub path: String,
 }
 
@@ -37,12 +40,14 @@ pub fn read_db() -> Result<HashMap<String, GotoFile>> {
             .get(2)
             .and_then(|count| count.parse::<u32>().ok())
             .unwrap_or(0);
+        let last_accessed = record.get(3).and_then(|ts| ts.parse::<i64>().ok());
 
         index_map.insert(
             alias.to_string(),
             GotoFile {
                 path: file_path.to_string(),
                 count: freq_count,
+                last_accessed,
             },
         );
     }
@@ -57,17 +62,20 @@ pub fn write_db(hm: HashMap<String, GotoFile>) -> Result<()> {
     }
     let mut wtr = Writer::from_path(path)?;
     for (k, v) in &hm {
-        wtr.write_record([k, &v.path, &v.count.to_string()])?;
+        let count = v.count.to_string();
+        let last_accessed = v.last_accessed.map(|ts| ts.to_string()).unwrap_or_default();
+        wtr.write_record([k.as_str(), v.path.as_str(), count.as_str(), last_accessed.as_str()])?;
     }
     wtr.flush()?;
     Ok(())
 }
 
-pub fn update_count(mut hm: HashMap<String, GotoFile>, key: &str) -> Result<()> {
+pub fn touch_path(mut hm: HashMap<String, GotoFile>, key: &str, now: i64) -> Result<()> {
     let mut updated = false;
     for val in hm.values_mut() {
         if val.path == key {
             val.count += 1;
+            val.last_accessed = Some(now);
             updated = true;
             break;
         }
@@ -76,6 +84,19 @@ pub fn update_count(mut hm: HashMap<String, GotoFile>, key: &str) -> Result<()> 
         write_db(hm)?;
     }
     Ok(())
+}
+
+pub fn learn_path(path: &Path, now: i64) -> Result<()> {
+    let mut db = read_db()?;
+    indexer::insert_path(&mut db, path);
+    touch_path(db, &path.display().to_string(), now)
+}
+
+pub fn now_ts() -> Result<i64> {
+    Ok(SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| anyhow!("System clock is before UNIX epoch."))?
+        .as_secs() as i64)
 }
 
 fn db_path() -> Result<PathBuf> {
@@ -101,14 +122,4 @@ pub fn list() -> Result<()> {
     println!("======= Current Indexed Directories (alias highlighted) =======");
     v.sort_by(|a, b| a.1.path.cmp(&b.1.path));
     pretty_print::pretty_print_tree(&v)
-}
-
-pub fn list_jumpsites(hm: HashMap<String, GotoFile>) -> Vec<GotoFile> {
-    let mut vec = hm
-        .into_values()
-        .filter(|val| val.count > 0)
-        .collect::<Vec<_>>();
-    vec.sort();
-    vec.reverse();
-    vec
 }

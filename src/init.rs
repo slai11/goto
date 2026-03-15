@@ -12,13 +12,19 @@ pub fn init() -> Result<()> {
 fn posix_goto() -> String {
     String::from(
         r#"
-_gt() {{
-    cd -- "$@" || return "$?"
+autoload -Uz add-zsh-hook
+
+_gt_record() {
+    command goto-rs record "${PWD:A}" >/dev/null 2>&1 || true
+}
+
+_gt() {
+    builtin cd -- "$@" || return "$?"
     if [ -n "$_ZO_ECHO" ]; then
         printf '%s\n' "$PWD"
     fi
-}}
-gt() {{
+}
+gt() {
     if [ "$#" -eq 0 ]; then
         result="$(goto-rs search)" || return "$?"
         if [ -n "$result" ]; then
@@ -32,7 +38,10 @@ gt() {{
             printf '%s\n' "$result"
         fi
     fi
-}}
+}
+
+add-zsh-hook chpwd _gt_record
+_gt_record
 "#,
     )
 }

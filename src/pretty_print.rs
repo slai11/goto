@@ -1,4 +1,5 @@
 use crate::db;
+use crate::switch;
 use anyhow::Result;
 use itertools::Itertools;
 use std::io::Write;
@@ -39,7 +40,7 @@ pub fn pretty_print_tree(db: &[(&String, &db::GotoFile)]) -> Result<()> {
     dummy.prettyprint("".to_string(), 0)
 }
 
-pub fn pretty_print_jumpsites(sites: &[db::GotoFile]) -> Result<()> {
+pub fn pretty_print_jumpsites(sites: &[switch::RankedPath]) -> Result<()> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
     writeln!(&mut stdout, "Listing all jump sites")?;
