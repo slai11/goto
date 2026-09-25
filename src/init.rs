@@ -1,47 +1,31 @@
 use anyhow::Result;
-use std::io::{self, Write};
 
-pub fn init() -> Result<()> {
-    let stdout = io::stdout();
-    let mut handle = stdout.lock();
-
-    writeln!(handle, "{}", posix_goto())?;
-    Ok(())
-}
-
-fn posix_goto() -> String {
-    String::from(
-        r#"
+const ZSH_INIT: &str = r#"
 autoload -Uz add-zsh-hook
 
 _gt_record() {
     command goto-rs record "${PWD:A}" >/dev/null 2>&1 || true
 }
 
-_gt() {
-    builtin cd -- "$@" || return "$?"
-    if [ -n "$_ZO_ECHO" ]; then
-        printf '%s\n' "$PWD"
-    fi
-}
 gt() {
+    local result
     if [ "$#" -eq 0 ]; then
-        result="$(goto-rs search)" || return "$?"
-        if [ -n "$result" ]; then
-            cd -- "$result" || return "$?"
-        fi
+        result="$(command goto-rs search)" || return "$?"
     else
-        result="$(goto-rs "$@")" || return "$?"
-        if [ -d "$result" ]; then
-            _gt "$result" || return "$?"
-        elif [ -n "$result" ]; then
-            printf '%s\n' "$result"
-        fi
+        result="$(command goto-rs "$@")" || return "$?"
+    fi
+    if [ -d "$result" ]; then
+        builtin cd -- "$result"
+    elif [ -n "$result" ]; then
+        printf '%s\n' "$result"
     fi
 }
 
 add-zsh-hook chpwd _gt_record
 _gt_record
-"#,
-    )
+"#;
+
+pub fn init() -> Result<()> {
+    println!("{}", ZSH_INIT);
+    Ok(())
 }

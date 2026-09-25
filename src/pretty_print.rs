@@ -1,147 +1,111 @@
-use crate::db;
-use crate::switch;
+use crate::db::GotoFile;
 use anyhow::Result;
-use itertools::Itertools;
 use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-pub fn pretty_print_tree(db: &[(&String, &db::GotoFile)]) -> Result<()> {
-    let mut dummy = Node {
-        next_level: Vec::new(),
-        name: "".to_string(),
-        val: None,
-        position: 0,
-    };
-
-    // create tree to traverse
-    for pair in db.iter() {
-        let k = pair.0;
-        let v = pair.1;
-
-        let mut ptr = &mut dummy;
-
-        let target_folder = v.path.split('/').last(); // really lazy, but its so fast anyway
-        for folder in v.path.split('/') {
-            // ignore the first empty split item
-            if !folder.is_empty() {
-                let val = if Some(folder) == target_folder {
-                    Some(k.to_string())
-                } else {
-                    None
-                };
-                ptr.insert_if_absent(folder, val);
-                ptr = ptr.find(folder).unwrap();
-            }
-        }
-    }
-
-    // dummy has no prefix and no sibling nodes,
-    // hence we seed with empty string and 0.
-    dummy.prettyprint("".to_string(), 0)
+// Output is captured by the `gt` shell function before being echoed, so stdout
+// is never a tty here and colors must be forced on.
+fn stdout() -> StandardStream {
+    StandardStream::stdout(ColorChoice::Always)
 }
 
-pub fn pretty_print_jumpsites(sites: &[switch::RankedPath]) -> Result<()> {
-    let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
-    writeln!(&mut stdout, "Listing all jump sites")?;
-    writeln!(&mut stdout)?;
+fn set_fg(stdout: &mut StandardStream, color: Color) -> Result<()> {
+    stdout.set_color(ColorSpec::new().set_fg(Some(color)))?;
+    Ok(())
+}
 
-    for (i, site) in sites.iter().enumerate() {
-        write!(&mut stdout, "[")?;
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
-        write!(&mut stdout, "{}", i + 1)?;
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
-        write!(&mut stdout, "]")?;
+pub fn pretty_print_tree(db: &[(&String, &GotoFile)]) -> Result<()> {
+    let mut root = Node::default();
+    for (alias, entry) in db {
+        let mut node = &mut root;
+        for folder in entry.path.split('/').filter(|f| !f.is_empty()) {
+            node = node.child(folder);
+        }
+        node.alias = Some(alias.to_string());
+    }
 
-        // grey + white for contrast
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Rgb(128, 128, 128))))?;
-        let split = &mut site.path.split('/').collect_vec();
-        write!(&mut stdout, " {}/", split[..split.len() - 1].join("/"))?;
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
-        writeln!(&mut stdout, "{}", split.last().unwrap())?;
+    let mut stdout = stdout();
+    for (i, child) in root.children.iter().enumerate() {
+        child.print(&mut stdout, "   ", i + 1 == root.children.len())?;
     }
     Ok(())
 }
 
-#[derive(Debug)]
-struct Node {
-    // Contains vec of child nodes
-    next_level: Vec<Node>,
+pub fn pretty_print_jumpsites(sites: &[GotoFile]) -> Result<()> {
+    let mut stdout = stdout();
+    set_fg(&mut stdout, Color::White)?;
+    writeln!(stdout, "Listing all jump sites")?;
+    writeln!(stdout)?;
 
+    for (i, site) in sites.iter().enumerate() {
+        let (parent, name) = site.path.rsplit_once('/').unwrap_or(("", &site.path));
+        write!(stdout, "[")?;
+        set_fg(&mut stdout, Color::Blue)?;
+        write!(stdout, "{}", i + 1)?;
+        set_fg(&mut stdout, Color::White)?;
+        write!(stdout, "]")?;
+
+        // grey + white for contrast
+        set_fg(&mut stdout, Color::Rgb(128, 128, 128))?;
+        write!(stdout, " {}/", parent)?;
+        set_fg(&mut stdout, Color::White)?;
+        writeln!(stdout, "{}", name)?;
+    }
+    Ok(())
+}
+
+#[derive(Debug, Default)]
+struct Node {
     // Name of folder
     name: String,
 
-    // Some if there is an alias at this node
-    val: Option<String>,
+    // Some if this folder is indexed
+    alias: Option<String>,
 
-    // Position in parent node's next_level vec
-    position: usize,
+    children: Vec<Node>,
 }
 
 impl Node {
-    // Returns mutable reference to child nodes with matching name
-    fn find(&mut self, name: &str) -> Option<&mut Node> {
-        self.next_level.iter_mut().find(|n| n.name == name)
+    // Returns the child with a matching name, creating it at the back if absent
+    fn child(&mut self, name: &str) -> &mut Node {
+        let idx = match self.children.iter().position(|n| n.name == name) {
+            Some(idx) => idx,
+            None => {
+                self.children.push(Node {
+                    name: name.to_string(),
+                    ..Node::default()
+                });
+                self.children.len() - 1
+            }
+        };
+        &mut self.children[idx]
     }
 
-    // Creates a new node and push into back of vector if it does not exist
-    fn insert_if_absent(&mut self, folder: &str, val: Option<String>) {
-        if !self.next_level.iter().any(|n| n.name == folder) {
-            self.next_level.push(Node {
-                next_level: Vec::new(),
-                name: folder.to_string(),
-                val,
-                position: self.next_level.len() + 1,
-            })
-        }
-    }
-
-    // Pretty prints 1 line of content and initiates pretty print of all child nodes
-    // Passes parent property of no. of children for child nodes to determine their relative
-    // position.
-    fn prettyprint(&self, prefix: String, node_fam_size: usize) -> Result<()> {
-        // position determines t or l
-
+    // Prints this node's line, then recurses into its children
+    fn print(&self, stdout: &mut StandardStream, prefix: &str, is_last: bool) -> Result<()> {
         let indent = "  ";
-        let has_next = self.position < node_fam_size;
 
-        if !self.name.is_empty() {
-            let mut stdout = StandardStream::stdout(ColorChoice::Always);
-            stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)))?;
+        set_fg(stdout, Color::White)?;
+        write!(stdout, "{}{} ", prefix, if is_last { "└─" } else { "├─" })?;
 
-            // print prefix depending on node's relative position
-            let sym = if has_next { "├─" } else { "└─" };
-            let pline = format!("{}{} ", prefix, sym);
-            write!(&mut stdout, "{}", pline)?;
-
-            // print in color only if folder is indexed
-            match &self.val {
-                None => {
-                    writeln!(&mut stdout, "{}", &self.name)?;
-                }
-                Some(v) => {
-                    if *v == *self.name {
-                        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
-                        writeln!(&mut stdout, "{}", &self.name)?;
-                    } else {
-                        // prints terminal folder name in white and adds its alias in blue
-                        write!(&mut stdout, "{}", &self.name)?;
-                        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Blue)))?;
-                        writeln!(&mut stdout, " [{}]", &v)?;
-                    }
-                }
+        // print in color only if folder is indexed
+        match &self.alias {
+            None => writeln!(stdout, "{}", self.name)?,
+            Some(alias) if *alias == self.name => {
+                set_fg(stdout, Color::Blue)?;
+                writeln!(stdout, "{}", self.name)?;
+            }
+            Some(alias) => {
+                // prints terminal folder name in white and adds its alias in blue
+                write!(stdout, "{}", self.name)?;
+                set_fg(stdout, Color::Blue)?;
+                writeln!(stdout, " [{}]", alias)?;
             }
         }
 
-        let new_prefix = if has_next {
-            prefix + "│" + indent
-        } else {
-            prefix + " " + indent
-        };
-
-        // recursively print out child nodes
-        for n in self.next_level.iter() {
-            n.prettyprint(new_prefix.to_string(), self.next_level.len())?;
+        let child_prefix = format!("{}{}{}", prefix, if is_last { " " } else { "│" }, indent);
+        for (i, child) in self.children.iter().enumerate() {
+            child.print(stdout, &child_prefix, i + 1 == self.children.len())?;
         }
         Ok(())
     }

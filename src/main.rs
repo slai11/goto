@@ -1,7 +1,8 @@
-use anyhow::{anyhow, Result};
-use std::process;
-
+use anyhow::{Result, anyhow};
+use clap::ArgMatches;
 use inquire::Select;
+use std::path::Path;
+use std::process;
 
 mod app;
 mod db;
@@ -20,29 +21,17 @@ fn run() -> Result<()> {
             let path = sub_matches
                 .get_one::<String>("path")
                 .ok_or_else(|| anyhow!("Path is required."))?;
-            db::learn_path(std::path::Path::new(path), db::now_ts()?)
+            db::learn_path(Path::new(path), db::now_ts()?)
         }
-        Some(("add", sub_matches)) => {
-            let depth = sub_matches
-                .get_one::<u8>("recursive")
-                .copied()
-                .unwrap_or_else(|| if sub_matches.get_flag("all") { 1 } else { 0 });
-            indexer::update(depth)
-        }
-        Some(("rm", sub_matches)) => {
-            let depth = sub_matches
-                .get_one::<u8>("recursive")
-                .copied()
-                .unwrap_or_else(|| if sub_matches.get_flag("all") { 1 } else { 0 });
-            indexer::remove(depth)
-        }
+        Some(("add", sub_matches)) => indexer::update(depth(sub_matches)),
+        Some(("rm", sub_matches)) => indexer::remove(depth(sub_matches)),
         Some(("jump", sub_matches)) => {
             let order = if sub_matches.get_flag("recent") {
                 switch::JumpOrder::Recent
             } else {
                 switch::JumpOrder::Frecency
             };
-            let jumpsites = switch::ranked_paths_for_jump(db::read_db()?, db::now_ts()?, order);
+            let jumpsites = switch::ranked_paths_for_jump(&db::read_db()?, db::now_ts()?, order);
             match sub_matches.get_one::<usize>("number").copied() {
                 Some(0) => Err(anyhow!("Jump index must be at least 1.")),
                 Some(index) => {
@@ -58,15 +47,10 @@ fn run() -> Result<()> {
                 None => pretty_print::pretty_print_jumpsites(&jumpsites),
             }
         }
-
         Some(("search", sub_matches)) => {
-            let query = sub_matches
-                .get_many::<String>("query")
-                .map(|values| values.cloned().collect::<Vec<_>>())
-                .unwrap_or_default();
             let jumpsites = switch::ranked_matches(
                 &db::read_db()?,
-                &query,
+                &query_terms(sub_matches),
                 db::now_ts()?,
                 switch::JumpOrder::Frecency,
             )
@@ -83,16 +67,10 @@ fn run() -> Result<()> {
             let site = Select::new("Jump to:", jumpsites)
                 .with_page_size(20)
                 .prompt()?;
-
             switch::switch_to_path(&site)
         }
-
         _ => {
-            let query = matches
-                .get_many::<String>("query")
-                .map(|values| values.cloned().collect::<Vec<_>>())
-                .unwrap_or_default();
-
+            let query = query_terms(&matches);
             if query.is_empty() {
                 Err(anyhow!("Provide a query or use `gt search`."))
             } else {
@@ -100,6 +78,21 @@ fn run() -> Result<()> {
             }
         }
     }
+}
+
+// `-r <depth>` wins over `-a`, which is shorthand for one level of subdirectories.
+fn depth(matches: &ArgMatches) -> u8 {
+    matches
+        .get_one::<u8>("recursive")
+        .copied()
+        .unwrap_or(u8::from(matches.get_flag("all")))
+}
+
+fn query_terms(matches: &ArgMatches) -> Vec<String> {
+    matches
+        .get_many::<String>("query")
+        .map(|values| values.cloned().collect())
+        .unwrap_or_default()
 }
 
 fn main() {
