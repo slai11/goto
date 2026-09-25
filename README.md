@@ -1,7 +1,7 @@
 # goto (gt)
 
-[![CI Status](https://img.shields.io/github/workflow/status/slai11/goto/ci/master?label=ci&logo=github&style=for-the-badge)](https://github.com/slai11/goto/actions)
-[![Crates.io](https://img.shields.io/crates/v/goto?style=for-the-badge)](https://crates.io/crates/goto-rs)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/slai11/goto/ci.yml?branch=master&label=ci&logo=github&style=for-the-badge)](https://github.com/slai11/goto/actions)
+[![Crates.io](https://img.shields.io/crates/v/goto-rs?style=for-the-badge)](https://crates.io/crates/goto-rs)
 [![License: MIT](https://img.shields.io/github/license/slai11/goto?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 
@@ -27,14 +27,19 @@ keystrokes.
 ## Installation 
 
 Step 1. Getting the binary
+
+Download the archive for your platform from the
+[releases page](https://github.com/slai11/goto/releases). For example, on an
+Apple Silicon Mac:
 ```
-wget https://github.com/slai11/goto/releases/download/v0.4.0/goto-rs-v0.4.0-x86_64-apple-darwin.tar.gz
-tar -xvf goto-rs-v0.4.0-x86_64-apple-darwin.tar.gz
-cp goto-rs-v0.4.0-x86_64-apple-darwin/goto-rs /usr/local/bin
+wget https://github.com/slai11/goto/releases/download/v0.4.0/goto-rs-v0.4.0-aarch64-apple-darwin.tar.gz
+tar -xvf goto-rs-v0.4.0-aarch64-apple-darwin.tar.gz
+cp goto-rs-v0.4.0-aarch64-apple-darwin/goto-rs /usr/local/bin
 ```
 
-Or you could clone the project and build from source. You will need rust (`brew
-install rust`) to do so.
+Or install it from crates.io with `cargo install goto-rs`, or clone the project
+and build from source. Either way you need Rust 1.85 or newer
+(`brew install rust`).
 ```
 git clone https://github.com/slai11/goto.git
 cd goto 
@@ -62,7 +67,7 @@ the tool learns automatically over time.
 Usage: goto-rs [query]... [COMMAND]
 
 Commands:
-  init    Initialises bash-script and database.
+  init    Prints the zsh integration script.
   ls      List all indexed directories.
   prune   Removes invalid indexes in the database.
   add     Add directories and sub-directories to index.

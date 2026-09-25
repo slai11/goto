@@ -1,11 +1,9 @@
-use clap::{arg, value_parser, ArgAction, Command};
+use clap::{ArgAction, Command, arg, value_parser};
 
 pub fn build_app() -> Command {
     Command::new("gt")
         .version(env!("CARGO_PKG_VERSION"))
-        .subcommand_required(false)
-        .arg_required_else_help(false)
-        .subcommand(Command::new("init").about("Initialises bash-script and database."))
+        .subcommand(Command::new("init").about("Prints the zsh integration script."))
         .subcommand(Command::new("ls").about("List all indexed directories."))
         .subcommand(Command::new("prune").about("Removes invalid indexes in the database."))
         .subcommand(

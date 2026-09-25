@@ -8,23 +8,18 @@ jobs:
   test:
     name: test
     env:
-      # For some builds, we use cross to test on 32-bit and big-endian
-      # systems.
+      # For some builds, we use cross to test on 32-bit and musl targets.
       CARGO: cargo
       # When CARGO is set to CROSS, this is set to `--target matrix.target`.
       TARGET_FLAGS:
-      # When CARGO is set to CROSS, TARGET_DIR includes matrix.target.
-      TARGET_DIR: ./target
       # Emit backtraces on panics.
       RUST_BACKTRACE: 1
-      # Apparently needed to use a2x on macOS.
-      XML_CATALOG_FILES: /usr/local/etc/xml/catalog
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         build:
-        # We test goto on a pinned version of Rust, along with the moving
-        # targets of 'stable' and 'beta' for good measure.
+        # We test goto on its minimum supported Rust version, along with
+        # stable for good measure.
         - pinned
         - stable
         - musl
@@ -34,46 +29,31 @@ jobs:
         - win-gnu
         include:
         - build: pinned
-          os: ubuntu-22.04
-          rust: 1.78.0
+          os: ubuntu-24.04
+          rust: 1.85.0
         - build: stable
-          os: ubuntu-22.04
+          os: ubuntu-24.04
           rust: stable
         - build: musl
-          os: ubuntu-22.04
+          os: ubuntu-24.04
           rust: stable
           target: x86_64-unknown-linux-musl
         - build: arm
-          os: ubuntu-22.04
+          os: ubuntu-24.04
           rust: stable
-          # For stripping release binaries:
-          # docker run --rm -v $PWD/target:/target:Z \
-          #   rustembedded/cross:arm-unknown-linux-gnueabihf \
-          #   arm-linux-gnueabihf-strip \
-          #   /target/arm-unknown-linux-gnueabihf/debug/goto
           target: arm-unknown-linux-gnueabihf
         - build: macos
-          os: macos-14
-          rust: 1.78.0
+          os: macos-15
+          rust: 1.85.0
         - build: win-msvc
-          os: windows-2022
+          os: windows-2025
           rust: stable
         - build: win-gnu
-          os: windows-2022
+          os: windows-2025
           rust: stable-x86_64-gnu
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install packages (Ubuntu)
-      if: matrix.os == 'ubuntu-22.04'
-      run: |
-        ci/ubuntu-install-packages
-
-    - name: Install packages (macOS)
-      if: matrix.os == 'macos-14'
-      run: |
-        ci/macos-install-packages
+      uses: actions/checkout@v7
 
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
@@ -82,92 +62,55 @@ jobs:
 
     - name: Use Cross
       if: matrix.target != ''
-      run: |
-        cargo install cross --locked
-        echo "CARGO=cross" >> $GITHUB_ENV
-        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
-        echo "TARGET_DIR=./target/${{ matrix.target }}" >> $GITHUB_ENV
-
-    - name: Show command used for Cargo
-      run: |
-        echo "cargo command is: ${{ env.CARGO }}"
-        echo "target flag is: ${{ env.TARGET_FLAGS }}"
-
-    - name: Build goto and all crates
-      run: ${{ env.CARGO }} build --verbose --locked --all ${{ env.TARGET_FLAGS }}
-
-    # This is useful for debugging problems when the expected build artifacts
-    # (like shell completions and man pages) aren't generated.
-    - name: Show build.rs stderr
       shell: bash
       run: |
-        set +x
-        stderr="$(find "${{ env.TARGET_DIR }}/debug" -name stderr -print0 | xargs -0 ls -t | head -n1)"
-        if [ -s "$stderr" ]; then
-          echo "===== $stderr ===== "
-          cat "$stderr"
-          echo "====="
-        fi
-        set -x
+        cargo install cross --locked
+        echo "CARGO=cross" >> "$GITHUB_ENV"
+        echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> "$GITHUB_ENV"
 
-    - name: Run tests (sans cross)
-      if: matrix.target == ''
-      run: ${{ env.CARGO }} test --verbose --locked --all ${{ env.TARGET_FLAGS }}
+    - name: Build goto
+      run: ${{ env.CARGO }} build --verbose --locked ${{ env.TARGET_FLAGS }}
 
-    - name: Run tests (with cross)
-      # These tests should actually work, but they almost double the runtime.
-      # Every integration test spins up qemu to run 'goto', and when PCRE2 is
-      # enabled, every integration test is run twice: one with the default
-      # regex engine and once with PCRE2.
-      if: matrix.target != ''
-      run: ${{ env.CARGO }} test --verbose --locked --all ${{ env.TARGET_FLAGS }}
+    - name: Run tests
+      run: ${{ env.CARGO }} test --verbose --locked ${{ env.TARGET_FLAGS }}
 
   rustfmt:
     name: rustfmt
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: 1.78.0
-        profile: minimal
+        toolchain: stable
         components: rustfmt
     - name: Check formatting
-      run: |
-        cargo fmt -v --all -- --check
+      run: cargo fmt --all -- --check
 
   clippy:
     name: clippy
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: stable
-        override: true
-        profile: minimal
         components: clippy
     - name: Check clippy linting
-      run: |
-        cargo clippy -v --locked --all-targets --all-features -- -D warnings
+      run: cargo clippy --locked --all-targets --all-features -- -D warnings
 
   cargo-publish-dryrun:
     name: cargo publish (dry run)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
     - name: Install Rust
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: stable
-        override: true
-        profile: minimal
-        components: clippy
     - name: Publish to crates.io
-      run: |
-        cargo publish --locked --dry-run
+      run: cargo publish --locked --dry-run
