@@ -1,5 +1,6 @@
 use std::cmp::Reverse;
 use std::collections::HashMap;
+use std::path::{Component, Path};
 
 use crate::db::{self, GotoFile};
 use anyhow::{Result, anyhow};
@@ -44,7 +45,8 @@ pub fn ranked_paths_for_jump(
         .collect()
 }
 
-// entries matching every query term, sorted by match quality and then by `order`
+// entries matching every query term, sorted by match quality and then by `order`.
+// paths through a hidden directory (`.pi/worktrees`, `.claude/worktrees`, …) are omitted.
 pub fn ranked_matches(
     db: &HashMap<String, GotoFile>,
     query: &[String],
@@ -59,6 +61,7 @@ pub fn ranked_matches(
 
     let mut candidates = db
         .iter()
+        .filter(|(_, entry)| !path_contains_hidden_dir(&entry.path))
         .filter_map(|(alias, entry)| {
             let match_score = query_match_score(alias, &entry.path, &terms)?;
             let last_accessed = entry.last_accessed.unwrap_or_default();
@@ -140,6 +143,15 @@ fn term_match_score(
     }
 
     (best > 0).then_some(best)
+}
+
+fn path_contains_hidden_dir(path: &str) -> bool {
+    Path::new(path)
+        .components()
+        .any(|component| match component {
+            Component::Normal(name) => name.to_string_lossy().starts_with('.'),
+            _ => false,
+        })
 }
 
 fn tokenize(input: &str) -> impl Iterator<Item = &str> {
@@ -226,6 +238,84 @@ fn ranked_matches_prefer_recent_when_match_quality_ties() {
     assert_eq!(
         ranked.first().map(|entry| entry.path.as_str()),
         Some("/tmp/notes")
+    );
+}
+
+#[test]
+fn ranked_matches_skip_paths_under_hidden_directories() {
+    let mut db = HashMap::new();
+    db.insert(
+        String::from("pymporal_service"),
+        db::GotoFile {
+            path: String::from(
+                "/Users/sylvester/allium/10tbps-asa/allium-services/pymporal_service",
+            ),
+            count: 2,
+            last_accessed: Some(1_000),
+        },
+    );
+    db.insert(
+        String::from(".pi/worktrees/pymporal_service"),
+        db::GotoFile {
+            path: String::from(
+                "/Users/sylvester/allium/10tbps/.pi/worktrees/pi-wt/allium-services/pymporal_service",
+            ),
+            count: 50,
+            last_accessed: Some(9_000),
+        },
+    );
+    db.insert(
+        String::from(".claude/worktrees/pymporal_service"),
+        db::GotoFile {
+            path: String::from(
+                "/Users/sylvester/allium/10tbps/.claude/worktrees/crystal/allium-services/pymporal_service",
+            ),
+            count: 50,
+            last_accessed: Some(9_000),
+        },
+    );
+    db.insert(
+        String::from(".hidden"),
+        db::GotoFile {
+            path: String::from("/tmp/.hidden"),
+            count: 10,
+            last_accessed: Some(9_000),
+        },
+    );
+    db.insert(
+        String::from("foo.bar"),
+        db::GotoFile {
+            path: String::from("/tmp/foo.bar"),
+            count: 1,
+            last_accessed: Some(500),
+        },
+    );
+
+    let ranked = ranked_matches(
+        &db,
+        &[String::from("pymporal")],
+        10_000,
+        JumpOrder::Frecency,
+    );
+    assert_eq!(
+        ranked
+            .iter()
+            .map(|entry| entry.path.as_str())
+            .collect::<Vec<_>>(),
+        ["/Users/sylvester/allium/10tbps-asa/allium-services/pymporal_service"]
+    );
+
+    let visible = ranked_matches(&db, &[], 10_000, JumpOrder::Frecency);
+    let paths = visible
+        .iter()
+        .map(|entry| entry.path.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        paths,
+        [
+            "/Users/sylvester/allium/10tbps-asa/allium-services/pymporal_service",
+            "/tmp/foo.bar",
+        ]
     );
 }
 

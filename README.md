@@ -107,7 +107,9 @@ gt proj api
 ```
 
 Queries are matched against both the stored alias and the full path, then ranked
-by match quality and frecency.
+by match quality and frecency. Directories nested under a hidden folder — a path
+component starting with `.`, such as `.pi/worktrees` or `.claude/worktrees` — are
+left out of jumps, `gt jump`, and the interactive list. `gt ls` still shows them.
 
 #### Interactive search
 Use `gt` with no arguments to open the interactive selector:

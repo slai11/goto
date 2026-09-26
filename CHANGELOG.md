@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## Unreleased
+- Skip directories nested under hidden folders (such as git worktrees in `.pi` or `.claude`) from jumps, `gt jump`, and interactive search.
+
 ## v0.4.0
 - Add interactive list-based select.
 - Learn directories automatically from zsh `cd` usage.
